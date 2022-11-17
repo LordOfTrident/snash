@@ -1,4 +1,4 @@
-CMD = ./cmd
+CMD = ./cmd/snash
 
 GO = go
 
