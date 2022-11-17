@@ -35,10 +35,12 @@ $ ./bin/app
 
 ## Features
 - [X] Executing simple commands
+- [X] An interactive REPL
 - [ ] Environment variables (reading + writing)
+- [ ] Aliases
 - [ ] If statements
-- [ ] Loops
 - [ ] Functions
+- [ ] Loops
 
 ## Bugs
 If you find any bugs, please create an issue and report them.

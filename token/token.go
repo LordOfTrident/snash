@@ -2,6 +2,8 @@ package token
 
 import "fmt"
 
+// Data about where the token was
+
 type Where struct {
 	Row, Col int
 	Path     string
@@ -20,12 +22,15 @@ const (
 	Separator
 
 	KeywordExit
+	KeywordEcho
+	KeywordCd
 
-	typeCount
+	Error
+	count // Count of all token types
 )
 
 func (type_ Type) String() string {
-	if typeCount != 5 {
+	if count != 8 {
 		panic("Cover all token types")
 	}
 
@@ -37,26 +42,50 @@ func (type_ Type) String() string {
 	case Separator: return "separator"
 
 	case KeywordExit: return "keyword exit"
+	case KeywordEcho: return "keyword echo"
+	case KeywordCd:   return "keyword cd"
+
+	case Error: return "error"
 
 	default: panic("Unreachable")
 	}
 }
 
+func (type_ Type) IsKeyword() bool {
+	switch type_ {
+	case KeywordExit, KeywordEcho, KeywordCd: return true
+
+	default: return false
+	}
+}
+
 type Token struct {
-	Type Type
-	Data string
+	Type   Type
+	Data   string
+	TxtLen int
 
 	Where Where
 }
 
-func New(type_ Type, data string, where Where) Token {
-	return Token{Type: type_, Data: data, Where: where}
+func New(type_ Type, data string, where Where, txtLen int) Token {
+	return Token{Type: type_, Data: data, Where: where, TxtLen: txtLen}
 }
 
-func Empty() Token {
-	return Token{Type: EOF}
+func NewError(where Where, format string, args... interface{}) Token {
+	return New(Error, fmt.Sprintf(format, args...), where, 0)
 }
 
-func (tok *Token) IsStatementEnd() bool {
-	return tok.Type == Separator || tok.Type == EOF
+func NewEOF(where Where) Token {
+	return New(EOF, "", where, 0)
+}
+
+func (tok Token) String() string {
+	// For outputting better errors
+
+	switch tok.Type {
+	case Separator: return "separator (';' or new line)"
+	case EOF:       return "end of file"
+
+	default: return fmt.Sprintf("'%v' of type '%v'", tok.Data, tok.Type)
+	}
 }

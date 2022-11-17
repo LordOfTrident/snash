@@ -3,58 +3,82 @@ package main
 import (
 	"os"
 	"fmt"
-	"bufio"
 
+	"github.com/LordOfTrident/snash/attr"
+	"github.com/LordOfTrident/snash/prompt"
+	"github.com/LordOfTrident/snash/env"
 	"github.com/LordOfTrident/snash/interpreter"
 )
 
+// 1.0.0: First release, executing simple commands
+// 1.1.0: Added an interactive REPL
+
+// App info
 const (
-	appName = "gastroshell"
+	appName = "snash"
 
 	versionMajor = 1
 	versionMinor = 0
 	versionPatch = 0
 )
 
-var stdin *bufio.Reader
+func printError(err error) {
+	fmt.Fprintf(os.Stderr, "%v%vError:%v %v\n", attr.Bold, attr.BrightRed, attr.Reset, err.Error())
+}
 
 func repl() int {
-	ex := 0
+	prompt.Init()
+
+	env := env.New()
+	p   := prompt.New()
 
 	for {
-		fmt.Print("$ ")
+		env.UpdateVars()
 
-		in, err := stdin.ReadString('\n')
-		if err != nil {
-			panic(err)
+		// Generate a prompt
+		var prompt string
+		if env.Ex == 0 {
+			prompt = env.GenPrompt(os.Getenv("PROMPT"))
+		} else {
+			prompt = env.GenPrompt(os.Getenv("ERR_PROMPT"))
 		}
 
-		var forced bool
-		ex, forced, err = interpreter.Interpret(in, "stdin")
+		// TODO: make an interactive flag variable
+		in := p.ReadLine(prompt, true)
+
+		err := interpreter.Interpret(env, in, "stdin")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err.Error())
+			printError(err)
 		}
 
-		if forced {
+		// Exit the repl if last exit was forced
+		if env.Flags.ForcedExit {
 			break
 		}
 	}
 
-	return ex
+	return env.Ex
 }
 
-func fromFile(path string) (int, error) {
+func fromFile(path string) int {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return 1, fmt.Errorf("Could not read file '%v'", path)
+		printError(fmt.Errorf("Could not read file '%v'", path))
+
+		os.Exit(1)
 	}
 
-	ex, _, err := interpreter.Interpret(string(data), path)
+	env := env.New()
+	env.UpdateVars()
+
+	err = interpreter.Interpret(env, string(data), path)
 	if err != nil {
-		return 1, err
+		printError(err)
+
+		os.Exit(1)
 	}
 
-	return ex, nil
+	return env.Ex
 }
 
 func usage() {
@@ -66,34 +90,30 @@ func version() {
 }
 
 func init() {
+	// Defaults
 	os.Setenv("SHELL", os.Args[0])
 
-	stdin = bufio.NewReader(os.Stdin)
+	os.Setenv("PROMPT",     "\\u@\\h \\w $ ")
+	os.Setenv("ERR_PROMPT", "\\u@\\h \\w [\\[" + attr.Bold + attr.BrightRed + "\\]\\ex" +
+	                        "\\[" + attr.Reset + "\\]] $ ")
 }
 
 func main() {
-	lastEx := 0
-
 	if len(os.Args) > 1 {
+		ex := 0
+
+		// Range over the arguments, skipping the first one which is the program path
 		for _, arg := range os.Args[1:] {
 			switch arg {
 			case "-h", "--help":    usage();   return
 			case "-v", "--version": version(); return
 
-			default:
-				ex, err := fromFile(arg)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err.Error())
-
-					os.Exit(1)
-				}
-
-				lastEx = ex
+			default: ex = fromFile(arg)
 			}
 		}
-	} else {
-		lastEx = repl()
-	}
 
-	os.Exit(lastEx)
+		os.Exit(ex)
+	} else {
+		os.Exit(repl())
+	}
 }
