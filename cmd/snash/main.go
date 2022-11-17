@@ -15,13 +15,14 @@ import (
 // 1.0.0: First release, executing simple commands
 // 1.1.0: Added an interactive REPL
 // 1.1.1: Add command line flags
+// 1.1.2: Ignore CTRL+C
 
 const (
 	appName = "snash"
 
 	versionMajor = 1
 	versionMinor = 1
-	versionPatch = 1
+	versionPatch = 2
 )
 
 var (

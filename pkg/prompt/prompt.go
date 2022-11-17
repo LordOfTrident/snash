@@ -3,6 +3,7 @@ package prompt
 import (
 	"os"
 	"os/exec"
+	"os/signal"
 	"fmt"
 	"strings"
 
@@ -17,6 +18,14 @@ type Prompt struct {
 }
 
 func Init() {
+	// Ignore CTRL+C
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	go func() {
+		<-c
+	}()
+
 	// Save the previous terminal attributes
 	bytes, err := exec.Command("stty", "-F", "/dev/tty", "-g").Output()
 	if err != nil {
