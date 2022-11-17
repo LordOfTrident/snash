@@ -1,5 +1,6 @@
 <p align="center">
-	<h1>snash</h1>
+	<img width="400px" src="res/logo.png"/>
+	<!--<h1 align="center">snash</h1> -->
 	<p align="center">A shell for Unix/Linux systems</p>
 </p>
 <p align="center">
