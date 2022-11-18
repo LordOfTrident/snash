@@ -1,8 +1,7 @@
 package lexer
 
 import (
-	"fmt"
-
+	"github.com/LordOfTrident/snash/pkg/errors"
 	"github.com/LordOfTrident/snash/pkg/token"
 )
 
@@ -51,10 +50,26 @@ func New(source, path string) *Lexer {
 func (l *Lexer) Lex() ([]token.Token, error)  {
 	toks := []token.Token{}
 
-	for l.char != CharNone {
-		var tok token.Token
+	end := false
+	for !end {
+		tok := l.NextToken()
+		switch tok.Type {
+		case token.EOF:   end = true
+		case token.Error: return toks, errors.ErrorTokenToError(tok)
+		}
 
+		toks = append(toks, tok)
+	}
+
+	return toks, nil
+}
+
+func (l *Lexer) NextToken() (tok token.Token) {
+	for {
 		switch l.char {
+		// EOF token marks the source end
+		case CharNone: tok = token.NewEOF(l.where)
+
 		case '\n', ';':
 			tok = token.New(token.Separator, "", l.where, 1)
 			l.next()
@@ -78,17 +93,10 @@ func (l *Lexer) Lex() ([]token.Token, error)  {
 			}
 		}
 
-		if tok.Type == token.Error {
-			return toks, fmt.Errorf("%v: %v", tok.Where, tok.Data)
-		}
-
-		toks = append(toks, tok)
+		break
 	}
 
-	// Add an EOF token to mark the source end
-	toks = append(toks, token.NewEOF(l.where))
-
-	return toks, nil
+	return
 }
 
 func (l *Lexer) next() {
@@ -154,14 +162,12 @@ func (l *Lexer) lexString() token.Token {
 					apostrophe = CharNone
 				} else if apostrophe == CharNone {
 					apostrophe = l.char
-				} else {
-					str += string(l.char)
 				}
 			}
 
 		case '\\':
-			if escape || apostrophe == CharNone { // Escape sequences are not allowed
-			                                      // outside of apostrophes
+			if apostrophe != '"' { // Escape sequences are not allowed
+			                       // outside of " apostrophes
 				str += string(l.char)
 			} else if escape {
 				str += string(l.char)
@@ -182,10 +188,10 @@ func (l *Lexer) lexString() token.Token {
 				case 'v': str += string('\v')
 				case 'b': str += string('\b')
 				case 'f': str += string('\f')
-				case '0': str += string(0)
 
 				default:
-					return token.NewError(l.where, "Unknown escape sequence '\\%c'", l.char)
+					return token.NewError(start, l.where.Col - start.Col,
+					                      "Unknown escape sequence '\\%c'", l.char)
 				}
 
 				escape = false
@@ -196,7 +202,7 @@ func (l *Lexer) lexString() token.Token {
 	}
 
 	if apostrophe != CharNone {
-		return token.NewError(l.where, "String exceeds line")
+		return token.NewError(start, l.where.Col - start.Col, "String exceeds line")
 	}
 
 	// Check if the string is a keyword
@@ -224,7 +230,8 @@ func (l *Lexer) lexInteger() token.Token {
 	// TODO: make tokens like '123abc' not error and instead be lexer as strings
 	for ; l.char != CharNone && !IsSeparator(l.char); l.next() {
 		if !IsDigit(l.char) {
-			return token.NewError(l.where, "Unexpected character '%c' in number", l.char)
+			return token.NewError(start, l.where.Col - start.Col,
+			                      "Unexpected character '%c' in number", l.char)
 		}
 
 		str += string(l.char)

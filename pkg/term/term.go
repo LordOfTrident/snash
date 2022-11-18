@@ -146,8 +146,6 @@ func GetKey() (key Key) {
 				break
 			}
 
-			fmt.Printf("%v ", v)
-
 			length ++
 		}
 

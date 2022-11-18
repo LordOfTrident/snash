@@ -23,48 +23,59 @@ type Parser struct {
 func New(source, path string) (*Parser, error) {
 	// The parser will automatically lex the source
 	l := lexer.New(source, path)
-	p := &Parser{idx: -1}
 
-	var err error
-	p.Toks, err = l.Lex()
+	toks, err := l.Lex()
 	if err != nil {
 		return nil, err
 	}
 
+	return NewFromTokens(toks), nil
+}
+
+func NewFromTokens(toks []token.Token) *Parser {
+	p := &Parser{idx: -1, Toks: toks}
+
 	p.next()
 
-	return p, nil
+	return p
 }
 
 func (p *Parser) Parse() (node.Statements, error) {
 	var program node.Statements
 
-	for p.tok.Type != token.EOF {
-		var statement node.Statement
-		var err       error // Save the error to handle all errors at once at the back of the loop
-
-		switch p.tok.Type {
-		case token.String:      statement, err = p.parseCmd()
-		case token.KeywordExit: statement, err = p.parseExit()
-		case token.KeywordEcho: statement, err = p.parseEcho()
-		case token.KeywordCd:   statement, err = p.parseCd()
-
-		case token.Separator:
-			p.next()
-
-			continue
-
-		default: err = errors.UnexpectedToken(p.tok)
-		}
-
+	for statement, err := p.NextStatement(); true; statement, err = p.NextStatement() {
 		if err != nil {
 			return program, err
+		}
+
+		if statement == nil {
+			break
 		}
 
 		program.List = append(program.List, statement)
 	}
 
 	return program, nil
+}
+
+func (p *Parser) NextStatement() (node.Statement, error) {
+	for {
+		switch p.tok.Type {
+		case token.EOF: return nil, nil
+
+		case token.String:      return p.parseCmd()
+		case token.KeywordExit: return p.parseExit()
+		case token.KeywordEcho: return p.parseEcho()
+		case token.KeywordCd:   return p.parseCd()
+
+		case token.Separator:
+			p.next()
+
+			continue
+
+		default: return nil, errors.UnexpectedToken(p.tok)
+		}
+	}
 }
 
 func (p *Parser) next() {

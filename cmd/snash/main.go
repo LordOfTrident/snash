@@ -6,10 +6,10 @@ import (
 	"flag"
 
 	"github.com/LordOfTrident/snash/pkg/attr"
-	"github.com/LordOfTrident/snash/pkg/errors"
 	"github.com/LordOfTrident/snash/pkg/repl"
 	"github.com/LordOfTrident/snash/pkg/env"
 	"github.com/LordOfTrident/snash/pkg/interpreter"
+	"github.com/LordOfTrident/snash/pkg/highlighter"
 )
 
 // 1.0.0: First release, executing simple commands
@@ -17,13 +17,16 @@ import (
 // 1.1.1: Add command line flags
 // 1.1.2: Ignore CTRL+C
 // 1.2.2: Add an option to print possible input errors under the prompt
+// 1.2.3: Improve syntax highlighting
+// 1.2.4: Fix string escape sequences
+// 1.2.5: Unescape error strings
 
 const (
 	appName = "snash"
 
 	versionMajor = 1
 	versionMinor = 2
-	versionPatch = 2
+	versionPatch = 5
 )
 
 var (
@@ -38,7 +41,7 @@ var e = env.New()
 func execScript(path string) int {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		errors.Print(fmt.Errorf("Could not read file '%v'", path))
+		highlighter.PrintError(fmt.Errorf("Could not read file '%v'", path))
 
 		os.Exit(1)
 	}
@@ -47,7 +50,7 @@ func execScript(path string) int {
 
 	err = interpreter.Interpret(e, string(data), path)
 	if err != nil {
-		errors.Print(err)
+		highlighter.PrintError(err)
 
 		os.Exit(1)
 	}
@@ -71,8 +74,9 @@ func init() {
 	os.Setenv("SHELL", os.Args[0])
 
 	os.Setenv("PROMPT",     "\\u@\\h \\w $ ")
-	os.Setenv("ERR_PROMPT", "\\u@\\h \\w [\\[" + attr.Bold + attr.BrightRed + "\\]\\ex" +
+	os.Setenv("PROMPT_ERR", "\\u@\\h \\w [\\[" + attr.Bold + attr.BrightRed + "\\]\\ex" +
 	                        "\\[" + attr.Reset + "\\]] $ ")
+	os.Setenv("PROMPT_MULTILINE", "> ")
 
 	// Flag related things
 
@@ -91,7 +95,7 @@ func main() {
 		return
 	}
 
-	if len(flag.Args()) > 1 {
+	if len(flag.Args()) > 0 {
 		ex := 0
 
 		// Range over the arguments that are not flags

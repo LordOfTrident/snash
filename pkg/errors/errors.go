@@ -2,20 +2,32 @@ package errors
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/LordOfTrident/snash/pkg/token"
 	"github.com/LordOfTrident/snash/pkg/node"
-	"github.com/LordOfTrident/snash/pkg/attr"
 )
-
-func Print(err error) {
-	fmt.Fprintf(os.Stderr, "%v%vError:%v %v\n", attr.Bold, attr.BrightRed, attr.Reset, err.Error())
-}
 
 type Error struct {
 	Where token.Where
 	Msg   string
+}
+
+func unescape(str string) (ret string) {
+	for _, ch := range str {
+		switch ch {
+		case 27:   ret += "'$'\\e"
+		case '\n': ret += "'$'\\n"
+		case '\r': ret += "'$'\\r"
+		case '\t': ret += "'$'\\t"
+		case '\v': ret += "'$'\\v"
+		case '\b': ret += "'$'\\b"
+		case '\f': ret += "'$'\\f"
+
+		default: ret += string(ch)
+		}
+	}
+
+	return
 }
 
 func (err Error) Error() string {
@@ -23,7 +35,7 @@ func (err Error) Error() string {
 }
 
 func New(where token.Where, format string, args... interface{}) error {
-	return Error{Where: where, Msg: fmt.Sprintf(format, args...)}
+	return Error{Where: where, Msg: unescape(fmt.Sprintf(format, args...))}
 }
 
 func UnexpectedToken(tok *token.Token) error {
@@ -44,4 +56,8 @@ func FileNotFound(path string, where token.Where) error {
 
 func UnexpectedNode(node node.Node) error {
 	return New(node.NodeToken().Where, "Unexpected %v", node.NodeToken())
+}
+
+func ErrorTokenToError(tok token.Token) error {
+	return fmt.Errorf("%v: %v", tok.Where, tok.Data)
 }

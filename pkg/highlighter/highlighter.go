@@ -1,6 +1,7 @@
 package highlighter
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -8,7 +9,7 @@ import (
 	"github.com/LordOfTrident/snash/pkg/errors"
 	"github.com/LordOfTrident/snash/pkg/attr"
 	"github.com/LordOfTrident/snash/pkg/token"
-	"github.com/LordOfTrident/snash/pkg/parser"
+	"github.com/LordOfTrident/snash/pkg/lexer"
 )
 
 const (
@@ -17,8 +18,15 @@ const (
 	colorKeyword = attr.Bold      + attr.BrightBlue
 	colorCmd     = attr.Bold      + attr.BrightYellow
 	colorInteger = attr.BrightCyan
-	colorPath    = attr.BrightGreen
+	colorPath    = attr.Underline + attr.BrightGreen
+	colorEscape  = attr.BrightMagenta
+	colorString  = attr.BrightGreen
 )
+
+func PrintError(err error) {
+	fmt.Fprintf(os.Stderr, "%v%vError:%v %v\n", attr.Bold, attr.BrightRed, attr.Reset,
+	            HighlightStrings(err.Error()))
+}
 
 func cmdExists(name string) bool {
 	_, err := exec.LookPath(name)
@@ -32,90 +40,152 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func highlightNext(tok token.Token, line string, lastCol int, isCmd bool) (int, string, error) {
-	idx := tok.Where.Col - 1
-
-	// Save the trailing spaces to output them
-	var spaces, highlighted string
-	if idx - lastCol > 0 {
-		spaces = line[lastCol:idx]
+func isCmd(toks []token.Token, i int) (isCmd bool) {
+	// Would the token be parsed as a command?
+	isCmd = true
+	if i > 0 {
+		if toks[i - 1].Type != token.Separator {
+			isCmd = false
+		}
 	}
 
-	if tok.Type == token.EOF {
-		highlighted += spaces
-	} else {
-		// Get the raw token text
-		txt := line[idx:idx + tok.TxtLen]
+	return
+}
 
-		// Update the last column
-		lastCol = idx + tok.TxtLen
+func HighlightStrings(str string) (ret string) {
+	apostrophe := lexer.CharNone
+	escape     := false
+
+	for _, ch := range str {
+		ch := byte(ch)
+
+		switch ch {
+		case '\'', '"':
+			if escape {
+				escape = false
+				ret += string(ch) + attr.Reset + colorString
+
+				continue
+			} else {
+				// Find out if it is an end marking apostrophe, a beginning one or just a part
+				// of the string
+				if apostrophe == ch {
+					apostrophe = lexer.CharNone
+
+					ret += string(ch) + attr.Reset
+
+					continue // We already added the character to the string
+				} else if apostrophe == lexer.CharNone {
+					apostrophe = ch
+					ret += colorString
+				}
+			}
+
+		case '\\':
+			if apostrophe == '"' { // Escape sequences are not allowed
+				if escape {        // outside of " apostrophes
+					escape = false
+
+					ret += string(ch) + attr.Reset + colorString
+
+					continue
+				} else {
+					escape = true
+					ret += colorEscape
+				}
+			}
+
+		default:
+			if escape {
+				ret += string(ch) + attr.Reset + colorString
+
+				continue
+			}
+		}
+
+		ret += string(ch)
+	}
+
+	return
+}
+
+func highlightNext(toks []token.Token, i int, line string) (highlighted string, err error) {
+	tok := toks[i]
+	col := tok.Where.Col - 1
+
+	prevCol := 0
+	if i > 0 {
+		prevCol = (toks[i - 1].Where.Col - 1 + toks[i - 1].TxtLen)
+	}
+
+	// If there is a space between this and the previous token
+	if col - prevCol > 0 {
+		// Save the ignored characters in between tokens and color the comments
+		highlighted += strings.Replace(line[prevCol:col], "#", colorComment + "#", -1)
+	}
+
+	if tok.Type != token.EOF {
+		// Get the raw token text
+		txt := line[col:col + tok.TxtLen]
+
+		isCmd := isCmd(toks, i)
 
 		switch tok.Type {
-		case token.Integer: highlighted += spaces + colorInteger + txt
+		case token.Integer: highlighted += colorKeyword + txt
+		case token.Error:   highlighted += colorError   + txt
 
 		default:
 			if tok.Type.IsKeyword() {
-				highlighted += spaces + colorKeyword + txt
+				highlighted += colorKeyword + txt
 			} else if isCmd { // Is the current token a command?
 				if cmdExists(tok.Data) {
-					highlighted += spaces + colorCmd + txt
+					highlighted += colorCmd + txt
 				} else {
-					return lastCol, spaces + colorError + txt + attr.Reset,
-					       errors.CmdNotFound(tok.Data, tok.Where)
+					err = errors.CmdNotFound(tok.Data, tok.Where)
+
+					highlighted += colorError + txt
 				}
 			} else if !isCmd && fileExists(tok.Data) { // Is the current token a file path argument?
-				highlighted += spaces + colorPath + txt
+				highlighted += colorPath + txt
 			} else {
-				highlighted += spaces + txt
+				highlighted += HighlightStrings(txt)
 			}
 		}
-
-		// Reset the color at the end of the token
-		highlighted += attr.Reset
 	}
 
-	return lastCol, highlighted, nil
+	highlighted += attr.Reset
+
+	return
 }
 
-// TODO: improve how the highlighting works, maybe lex the tokens one by one as the highlighting
-//       loop goes
+func HighlightLine(line, path string) (out string, firstErr error) {
+	l := lexer.New(line, path)
 
-func HighlightLine(line, path string) (string, error) {
-	// Try parsing and lexing the code to catch any errors
-	p, err := parser.New(line, path)
-	if err != nil {
-		return colorError + line + attr.Reset, err
+	// Lex all the tokens (We do this manually because we want to keep lexing even after errors)
+	var toks []token.Token
+	for tok := l.NextToken(); true; tok = l.NextToken() {
+		toks = append(toks, tok)
+
+		if tok.Type == token.EOF {
+			break
+		}
 	}
 
-	_, err = p.Parse()
-	if err != nil {
-		return colorError + line + attr.Reset, err
-	}
+	for i, tok := range toks {
+		// If an error was found, only report it if it is the first error
+		if tok.Type == token.Error && firstErr == nil {
+			firstErr = errors.ErrorTokenToError(tok)
+		}
 
-	out     := "" // The final highlighted output
-	lastCol := 0
-	isCmd   := true
-	for _, tok := range p.Toks {
-		var next string
-		var err  error
-		lastCol, next, err = highlightNext(tok, line, lastCol, isCmd)
-		if err != nil {
-			return colorError + line + attr.Reset, err
+		next, err := highlightNext(toks, i, line)
+		if err != nil && firstErr == nil {
+			firstErr = err
 		}
 
 		out += next
-
-		if isCmd {
-			isCmd = false
-		} else {
-			if tok.Type == token.Separator {
-				isCmd = true
-			}
-		}
 	}
 
-	// Color the comments
-	out = strings.Replace(out, "#", colorComment + "#", -1)
+	out += attr.Reset
 
-	return out + attr.Reset, nil
+	return
 }

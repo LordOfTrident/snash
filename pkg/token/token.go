@@ -71,8 +71,8 @@ func New(type_ Type, data string, where Where, txtLen int) Token {
 	return Token{Type: type_, Data: data, Where: where, TxtLen: txtLen}
 }
 
-func NewError(where Where, format string, args... interface{}) Token {
-	return New(Error, fmt.Sprintf(format, args...), where, 0)
+func NewError(where Where, txtLen int, format string, args... interface{}) Token {
+	return New(Error, fmt.Sprintf(format, args...), where, txtLen)
 }
 
 func NewEOF(where Where) Token {

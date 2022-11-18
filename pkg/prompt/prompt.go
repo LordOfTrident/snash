@@ -15,11 +15,9 @@ type Prompt struct {
 	history    []string
 	historyIdx int
 
-	input string
-	curx  int
-
-	prompt, promptLastLine string
-	promptLastLineLen      int
+	lines []string
+	line   *string
+	curx    int
 
 	prevErrored bool // Did the previous input have an error?
 }
@@ -37,8 +35,8 @@ func (p *Prompt) historyUp() {
 	}
 
 	// Reset the cursor position and update the input if we moved in history
-	p.input = p.history[p.historyIdx]
-	p.curx  = len(p.input)
+	*p.line = p.history[p.historyIdx]
+	p.curx  = len(*p.line)
 }
 
 func (p *Prompt) historyDown() {
@@ -47,18 +45,26 @@ func (p *Prompt) historyDown() {
 	}
 
 	// Reset the cursor position and update the input if we moved in history
-	p.input = p.history[p.historyIdx]
-	p.curx  = len(p.input)
+	*p.line = p.history[p.historyIdx]
+	p.curx  = len(*p.line)
 }
 
-func (p *Prompt) finishInput() {
-	if len(p.input) > 0 {
-		// Save input to history
-		p.history[len(p.history) - 1] = p.input
-		p.history = append(p.history, "")
+func (p *Prompt) finishInput() (input string) {
+	for i, line := range p.lines {
+		if i > 0 {
+			input += "; "
+		}
 
-		p.input = ""
+		input += line
 	}
+
+	if len(input) > 0 {
+		// Save input to history
+		p.history[len(p.history) - 1] = input
+		p.history = append(p.history, "")
+	}
+
+	return
 }
 
 func (p *Prompt) moveCursorLeft() {
@@ -68,37 +74,31 @@ func (p *Prompt) moveCursorLeft() {
 }
 
 func (p *Prompt) moveCursorRight() {
-	if p.curx < len(p.input) {
+	if p.curx < len(*p.line) {
 		p.curx ++
 	}
 }
 
 func (p *Prompt) eraseCursorChar() {
 	if p.curx > 0 {
-		part1 := p.input[:p.curx - 1]
-		part2 := p.input[p.curx:]
+		part1 := (*p.line)[:p.curx - 1]
+		part2 := (*p.line)[p.curx:]
 
-		p.input = part1 + part2
+		*p.line = part1 + part2
 		p.curx  --
 	}
 }
 
 func (p *Prompt) insertCharAtCursor(char byte) {
 	// Save the input left and right parts to insert the character
-	part1 := p.input[:p.curx]
-	part2 := p.input[p.curx:]
+	part1 := (*p.line)[:p.curx]
+	part2 := (*p.line)[p.curx:]
 
-	p.input = part1 + string(char) + part2
+	*p.line = part1 + string(char) + part2
 	p.curx  ++
 }
 
-func (p *Prompt) setPrompt(prompt string) {
-	p.prompt = prompt
-
-	p.promptLastLineLen = 0
-	p.promptLastLine    = ""
-
-	// Calculate the length of the last prompt line
+func getLastPromptLine(prompt string) (lastLine string, lastLineLen int) {
 	skip := false
 	for _, ch := range prompt {
 		// Ignore characters marked to be ignored
@@ -107,20 +107,24 @@ func (p *Prompt) setPrompt(prompt string) {
 		case 2: skip = false
 		}
 
+		lastLine += string(ch)
+
 		if !skip {
 			if ch == '\n' {
-				p.promptLastLineLen = 0
-				p.promptLastLine    = ""
+				lastLineLen = 0
+				lastLine    = ""
 			} else {
-				p.promptLastLineLen ++
-				p.promptLastLine    += string(ch)
+				lastLineLen ++
 			}
 		}
 	}
+
+	return
 }
 
 func (p *Prompt) renderPossibleErrorLine(err error) {
 	if err != nil {
+		// Render the error line
 		term.NewLine()
 		term.ClearCursorLine()
 		fmt.Printf("%vError: %v%v", attr.Grey, err.Error(), attr.Reset)
@@ -128,6 +132,7 @@ func (p *Prompt) renderPossibleErrorLine(err error) {
 
 		p.prevErrored = true
 	} else if p.prevErrored {
+		// Clear the error line
 		term.MoveCursorDown(1)
 		term.ClearCursorLine()
 		term.MoveCursorUp(1)
@@ -137,18 +142,21 @@ func (p *Prompt) renderPossibleErrorLine(err error) {
 }
 
 func (p *Prompt) clear() {
-	p.input       = ""
+	p.lines       = []string{""}
+	p.line        = &p.lines[0]
 	p.curx        = 0
 	p.historyIdx  = len(p.history) - 1
 	p.prevErrored = false
 }
 
-func (p *Prompt) Input(prompt string) string {
+func (p *Prompt) Input(prompt, multiLinePrompt string) string {
 	term.InputMode()
 
 	p.clear()
 
-	p.setPrompt(prompt)
+	promptLastLine, _ := getLastPromptLine(prompt)
+	//promptLastLine, promptLastLineLen := getLastPromptLine(prompt)
+
 	fmt.Print(prompt) // Output all lines of the prompt
 
 loop:
@@ -156,21 +164,21 @@ loop:
 		var out string
 		if p.Interactive {
 			var err error
-			out, err = highlighter.HighlightLine(p.input, "stdin")
+			out, err = highlighter.HighlightLine(*p.line, "stdin")
 			if p.ShowPossibleErrors {
 				p.renderPossibleErrorLine(err)
 			}
 		} else {
-			out = p.input
+			out = *p.line
 		}
 
 		term.ClearCursorLine()
 
 		// Output the last line of the prompt and the input
-		fmt.Print(p.promptLastLine, out)
+		fmt.Print(promptLastLine, out)
 
 		// Position the cursor
-		offx := len(p.input) - p.curx
+		offx := len(*p.line) - p.curx
 		if offx != 0 {
 			term.MoveCursorRight(offx)
 		}
@@ -188,7 +196,7 @@ loop:
 		case term.KeyArrowRight: p.moveCursorRight()
 		case term.KeyArrowLeft:  p.moveCursorLeft()
 
-		case term.KeyResize: fmt.Println("RESIZED")
+		case term.KeyResize:
 
 		default:
 			if key >= term.Key(' ') && key <= term.Key('~') {
@@ -197,10 +205,7 @@ loop:
 		}
 	}
 
-	// Save the input to return it
-	ret := p.input
-
-	p.finishInput()
+	ret := p.finishInput()
 	fmt.Println()
 
 	term.RestoreMode()
