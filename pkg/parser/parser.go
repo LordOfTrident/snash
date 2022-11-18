@@ -9,14 +9,6 @@ import (
 	"github.com/LordOfTrident/snash/pkg/node"
 )
 
-func unexpected(tok *token.Token) error {
-	return errors.New(tok.Where, "Unexpected %v", tok)
-}
-
-func expected(tok *token.Token, expected token.Type) error {
-	return errors.New(tok.Where, "Expected type '%v', got %v", expected, tok)
-}
-
 func isStatementEnd(tok *token.Token) bool {
 	return tok.Type == token.Separator || tok.Type == token.EOF
 }
@@ -62,7 +54,7 @@ func (p *Parser) Parse() (node.Statements, error) {
 
 			continue
 
-		default: err = unexpected(p.tok)
+		default: err = errors.UnexpectedToken(p.tok)
 		}
 
 		if err != nil {
@@ -102,7 +94,7 @@ func (p *Parser) parseCmd() (*node.CmdStatement, error) {
 		// Arguments can only be strings or integers
 		case token.String, token.Integer: arg = p.tok.Data
 
-		default: return nil, unexpected(p.tok)
+		default: return nil, errors.UnexpectedToken(p.tok)
 		}
 
 		cs.Args = append(cs.Args, arg)
@@ -132,12 +124,12 @@ func (p *Parser) parseExit() (*node.ExitStatement, error) {
 
 		p.next()
 	} else {
-		return nil, expected(p.tok, token.Integer)
+		return nil, errors.ExpectedToken(p.tok, token.Integer)
 	}
 
 	// Make sure the statement is ended
 	if !isStatementEnd(p.tok) {
-		return nil, expected(p.tok, token.Separator)
+		return nil, errors.ExpectedToken(p.tok, token.Separator)
 	}
 
 	p.next()
@@ -153,7 +145,7 @@ func (p *Parser) parseEcho() (*node.EchoStatement, error) {
 		switch p.tok.Type {
 		case token.String, token.Integer: echo.Msg += p.tok.Data + " "
 
-		default: return nil, unexpected(p.tok)
+		default: return nil, errors.UnexpectedToken(p.tok)
 		}
 	}
 
@@ -171,7 +163,7 @@ func (p *Parser) parseCd() (*node.CdStatement, error) {
 
 		p.next()
 	} else {
-		return nil, expected(p.tok, token.String)
+		return nil, errors.ExpectedToken(p.tok, token.String)
 	}
 
 	return cd, nil

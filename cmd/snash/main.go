@@ -16,19 +16,24 @@ import (
 // 1.1.0: Added an interactive REPL
 // 1.1.1: Add command line flags
 // 1.1.2: Ignore CTRL+C
+// 1.2.2: Add an option to print possible input errors under the prompt
 
 const (
 	appName = "snash"
 
 	versionMajor = 1
-	versionMinor = 1
+	versionMinor = 2
 	versionPatch = 2
 )
 
 var (
-	interactive = flag.Bool("interactive", true, "Interactive REPL mode")
-	showVersion = flag.Bool("version",     false, "Show the version")
+	showVersion = flag.Bool("version", false, "Show the version")
+
+	interactive        = flag.Bool("interactive",        true, "Interactive REPL mode")
+	showPossibleErrors = flag.Bool("showPossibleErrors", true, "Print the possible input errors")
 )
+
+var e = env.New()
 
 func execScript(path string) int {
 	data, err := os.ReadFile(path)
@@ -38,17 +43,16 @@ func execScript(path string) int {
 		os.Exit(1)
 	}
 
-	env := env.New()
-	env.UpdateVars()
+	e.UpdateVars()
 
-	err = interpreter.Interpret(env, string(data), path)
+	err = interpreter.Interpret(e, string(data), path)
 	if err != nil {
 		errors.Print(err)
 
 		os.Exit(1)
 	}
 
-	return env.Ex
+	return e.Ex
 }
 
 func usage() {
@@ -76,7 +80,6 @@ func init() {
 
 	// Aliases
 	flag.BoolVar(showVersion, "v", *showVersion, "alias for -version")
-	flag.BoolVar(interactive, "i", *interactive, "alias for -interactive")
 
 	flag.Parse()
 }
@@ -98,6 +101,6 @@ func main() {
 
 		os.Exit(ex)
 	} else {
-		os.Exit(repl.REPL(*interactive))
+		os.Exit(repl.REPL(e, *interactive, *showPossibleErrors))
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"github.com/LordOfTrident/snash/pkg/errors"
@@ -13,39 +12,10 @@ import (
 	"github.com/LordOfTrident/snash/pkg/env"
 )
 
-func exitStatusToExitCode(status string) int {
-	// Golang commands error if the exitcode is not 0, but they dont return the exitcode itself,
-	// so we have to get the exitcode from the error message (ugly, but whatever)
-
-	// The error message format is 'exit status <n>' where '<n>' is the exitcode,
-	// so we can just chop off the prefix 'exit status '
-	msg := "exit status "
-
-	if status[:len(msg)] == msg {
-		status = status[len(msg):]
-	}
-
-	ex, err := strconv.Atoi(status)
-	if err != nil {
-		panic(err)
-	}
-
-	return ex
-}
-
-func cmdNotFound(cmd string, node node.Node) error {
-	return errors.New(node.NodeToken().Where, "Command '%v' not found", cmd)
-}
-
-func fileNotFound(path string, node node.Node) error {
-	return errors.New(node.NodeToken().Where, "File/directory '%v' not found", path)
-}
-
-func unexpected(node node.Node) error {
-	return errors.New(node.NodeToken().Where, "Unexpected %v", node.NodeToken())
-}
-
 func Interpret(env *env.Env, source, path string) error {
+	lastEx := env.Ex
+	env.Ex  = 0
+
 	p, err := parser.New(source, path)
 	if err != nil {
 		env.Ex = 1
@@ -67,22 +37,20 @@ func Interpret(env *env.Env, source, path string) error {
 		switch s := s.(type) {
 		case *node.CmdStatement: err = evalCmd(env, s)
 		case *node.ExitStatement:
-			evalExit(env, s)
+			evalExit(env, s, lastEx)
 
 			return nil
 
 		case *node.EchoStatement: evalEcho(env, s)
 		case *node.CdStatement:   err = evalCd(env, s)
 
-		default: err = unexpected(s) // TODO: this
+		default: err = errors.UnexpectedNode(s)
 		}
 
 		if err != nil {
 			return err
 		}
 	}
-
-	env.Ex = 0
 
 	return nil
 }
@@ -120,7 +88,7 @@ func evalCmd(env *env.Env, cs *node.CmdStatement) error {
 	if _, err := exec.LookPath(cs.Cmd); err != nil {
 		env.Ex = 127
 
-		return cmdNotFound(cs.Cmd, cs)
+		return errors.CmdNotFound(cs.Cmd, cs.NodeToken().Where)
 	}
 
 	// Redirect streams and execute the command
@@ -129,14 +97,13 @@ func evalCmd(env *env.Env, cs *node.CmdStatement) error {
 	process.Stdout = os.Stdout
 	process.Stdin  = os.Stdin
 
-	err := process.Start()
-	if err == nil {
-		err = process.Wait()
+	if err := process.Start(); err != nil {
+		panic(err)
 	}
 
-	if werr, ok := err.(*exec.ExitError); ok {
-		// Parse the error message to get the command exitcode
-		env.Ex = exitStatusToExitCode(werr.Error())
+	err := process.Wait()
+	if exErr, ok := err.(*exec.ExitError); ok {
+		env.Ex = exErr.ExitCode()
 
 		return nil
 	}
@@ -150,7 +117,7 @@ func evalArg(str string) (string, error) {
 	return str, nil
 }
 
-func evalExit(env *env.Env, ex *node.ExitStatement) {
+func evalExit(env *env.Env, ex *node.ExitStatement, lastEx int) {
 	// Let the environment know that a forced exit happend
 	env.Flags.ForcedExit = true
 
@@ -158,6 +125,8 @@ func evalExit(env *env.Env, ex *node.ExitStatement) {
 	// the requested one
 	if ex.HasEx {
 		env.Ex = ex.Ex
+	} else {
+		env.Ex = lastEx
 	}
 }
 
@@ -171,7 +140,7 @@ func evalCd(env *env.Env, cd *node.CdStatement) error {
 	if err != nil {
 		env.Ex = 1
 
-		return fileNotFound(cd.Path, cd)
+		return errors.FileNotFound(cd.Path, cd.NodeToken().Where)
 	}
 
 	return nil

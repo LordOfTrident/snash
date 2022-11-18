@@ -79,7 +79,7 @@ func (l *Lexer) Lex() ([]token.Token, error)  {
 		}
 
 		if tok.Type == token.Error {
-			return nil, fmt.Errorf("%v: %v", tok.Where, tok.Data)
+			return toks, fmt.Errorf("%v: %v", tok.Where, tok.Data)
 		}
 
 		toks = append(toks, tok)

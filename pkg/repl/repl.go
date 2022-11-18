@@ -5,39 +5,39 @@ import (
 
 	"github.com/LordOfTrident/snash/pkg/errors"
 	"github.com/LordOfTrident/snash/pkg/env"
+	"github.com/LordOfTrident/snash/pkg/term"
 	"github.com/LordOfTrident/snash/pkg/prompt"
 	"github.com/LordOfTrident/snash/pkg/interpreter"
 )
 
-func REPL(interactive bool) int {
-	prompt.Init()
+func REPL(e *env.Env, interactive, showPossibleErrors bool) int {
+	term.Init()
 
-	env := env.New()
-	p   := prompt.New()
+	p := prompt.New(interactive, showPossibleErrors)
 
 	for {
-		env.UpdateVars()
+		e.UpdateVars()
 
 		// Generate a prompt
 		var prompt string
-		if env.Ex == 0 {
-			prompt = env.GenPrompt(os.Getenv("PROMPT"))
+		if e.Ex == 0 {
+			prompt = e.GenPrompt(os.Getenv("PROMPT"))
 		} else {
-			prompt = env.GenPrompt(os.Getenv("ERR_PROMPT"))
+			prompt = e.GenPrompt(os.Getenv("ERR_PROMPT"))
 		}
 
-		in := p.ReadLine(prompt, interactive)
+		in := p.Input(prompt)
 
-		err := interpreter.Interpret(env, in, "stdin")
+		err := interpreter.Interpret(e, in, "stdin")
 		if err != nil {
 			errors.Print(err)
 		}
 
 		// Exit the repl if last exit was forced
-		if env.Flags.ForcedExit {
+		if e.Flags.ForcedExit {
 			break
 		}
 	}
 
-	return env.Ex
+	return e.Ex
 }

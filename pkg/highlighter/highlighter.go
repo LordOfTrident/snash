@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/LordOfTrident/snash/pkg/errors"
 	"github.com/LordOfTrident/snash/pkg/attr"
 	"github.com/LordOfTrident/snash/pkg/token"
 	"github.com/LordOfTrident/snash/pkg/parser"
@@ -31,12 +32,10 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-// TODO: Use the nodes to highlight - modify all nodes and args to contain the tokens so its
-//       possible to use them for highlighting
-
-func highlightNext(tok token.Token, line string, lastCol int, isCmd bool) (int, string) {
+func highlightNext(tok token.Token, line string, lastCol int, isCmd bool) (int, string, error) {
 	idx := tok.Where.Col - 1
 
+	// Save the trailing spaces to output them
 	var spaces, highlighted string
 	if idx - lastCol > 0 {
 		spaces = line[lastCol:idx]
@@ -45,8 +44,10 @@ func highlightNext(tok token.Token, line string, lastCol int, isCmd bool) (int, 
 	if tok.Type == token.EOF {
 		highlighted += spaces
 	} else {
+		// Get the raw token text
 		txt := line[idx:idx + tok.TxtLen]
 
+		// Update the last column
 		lastCol = idx + tok.TxtLen
 
 		switch tok.Type {
@@ -55,38 +56,52 @@ func highlightNext(tok token.Token, line string, lastCol int, isCmd bool) (int, 
 		default:
 			if tok.Type.IsKeyword() {
 				highlighted += spaces + colorKeyword + txt
-			} else if isCmd && cmdExists(tok.Data) {
-				highlighted += spaces + colorCmd + txt
-			} else if !isCmd && fileExists(tok.Data){
+			} else if isCmd { // Is the current token a command?
+				if cmdExists(tok.Data) {
+					highlighted += spaces + colorCmd + txt
+				} else {
+					return lastCol, spaces + colorError + txt + attr.Reset,
+					       errors.CmdNotFound(tok.Data, tok.Where)
+				}
+			} else if !isCmd && fileExists(tok.Data) { // Is the current token a file path argument?
 				highlighted += spaces + colorPath + txt
 			} else {
 				highlighted += spaces + txt
 			}
 		}
 
+		// Reset the color at the end of the token
 		highlighted += attr.Reset
 	}
 
-	return lastCol, highlighted
+	return lastCol, highlighted, nil
 }
 
-func HighlightLine(line, path string) string {
+// TODO: improve how the highlighting works, maybe lex the tokens one by one as the highlighting
+//       loop goes
+
+func HighlightLine(line, path string) (string, error) {
+	// Try parsing and lexing the code to catch any errors
 	p, err := parser.New(line, path)
 	if err != nil {
-		return colorError + line + attr.Reset
+		return colorError + line + attr.Reset, err
 	}
 
 	_, err = p.Parse()
 	if err != nil {
-		return colorError + line + attr.Reset
+		return colorError + line + attr.Reset, err
 	}
 
-	out     := ""
+	out     := "" // The final highlighted output
 	lastCol := 0
 	isCmd   := true
 	for _, tok := range p.Toks {
 		var next string
-		lastCol, next = highlightNext(tok, line, lastCol, isCmd)
+		var err  error
+		lastCol, next, err = highlightNext(tok, line, lastCol, isCmd)
+		if err != nil {
+			return colorError + line + attr.Reset, err
+		}
 
 		out += next
 
@@ -99,7 +114,8 @@ func HighlightLine(line, path string) string {
 		}
 	}
 
+	// Color the comments
 	out = strings.Replace(out, "#", colorComment + "#", -1)
 
-	return out + attr.Reset
+	return out + attr.Reset, nil
 }

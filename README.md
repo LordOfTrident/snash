@@ -24,8 +24,9 @@
 * [Make](#make)
 
 ## Introduction
-A [shell](https://en.wikipedia.org/wiki/Unix_shell) for [unix](https://en.wikipedia.org/wiki/Unix) and
-[linux](https://en.wikipedia.org/wiki/Linux) systems written in Go.
+A non-[POSIX](https://en.wikipedia.org/wiki/POSIX) compliant
+[shell](https://en.wikipedia.org/wiki/Unix_shell) for [unix](https://en.wikipedia.org/wiki/Unix) and
+[linux](https://en.wikipedia.org/wiki/Linux) systems written in [Go](https://go.dev/).
 `snash` stands for `snail shell`
 
 ## Quickstart
