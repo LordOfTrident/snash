@@ -13,7 +13,7 @@ const (
 	AppName = "snash"
 
 	VersionMajor = 1
-	VersionMinor = 5
+	VersionMinor = 6
 	VersionPatch = 4
 )
 
@@ -25,6 +25,7 @@ var (
 var (
 	Interactive        = flag.Bool("interactive",        true, "Interactive REPL mode")
 	ShowPossibleErrors = flag.Bool("showPossibleErrors", true, "Print the possible input errors")
+	SyntaxHighlighting = flag.Bool("syntaxHighlighting", true, "Syntax highlight the input")
 )
 
 func HasFolder() bool {

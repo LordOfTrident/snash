@@ -23,6 +23,7 @@ import (
 // 1.3.4: Unescape error strings
 // 1.4.4: CTRL + arrow keys cursor movement
 // 1.5.4: Config folder + REPL history file
+// 1.6.4: Syntax highlighting flag, make ixon not be disabled when the mode is not interactive
 
 var showVersion = flag.Bool("version", false, "Show the version")
 

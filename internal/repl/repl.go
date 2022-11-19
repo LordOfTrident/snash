@@ -3,7 +3,6 @@ package repl
 import (
 	"os"
 
-	"github.com/LordOfTrident/snash/internal/config"
 	"github.com/LordOfTrident/snash/internal/env"
 	"github.com/LordOfTrident/snash/internal/term"
 	"github.com/LordOfTrident/snash/internal/prompt"
@@ -14,7 +13,7 @@ import (
 func REPL(e *env.Env) int {
 	term.Init()
 
-	p := prompt.New(*config.Interactive, *config.ShowPossibleErrors)
+	p := prompt.New()
 
 	for {
 		e.UpdateVars()

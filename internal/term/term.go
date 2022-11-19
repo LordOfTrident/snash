@@ -99,11 +99,14 @@ func RestoreMode() {
 	exec.Command("stty", "-F", "/dev/tty", mode).Run()
 }
 
-func InputMode() {
+func InputMode(ixon bool) {
 	// Some terminal attributes so we can easily read each key press
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 	exec.Command("stty", "-F", "/dev/tty", "-echo").Run() // No input echo
-	exec.Command("stty", "-F", "/dev/tty", "-ixon").Run() // Recieve CTRL+S
+
+	if !ixon {
+		exec.Command("stty", "-F", "/dev/tty", "-ixon").Run() // Recieve CTRL+S
+	}
 }
 
 // 'stty size' output format is '<HEIGHT> <WIDTH>'

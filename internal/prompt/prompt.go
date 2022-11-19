@@ -15,9 +15,6 @@ import (
 //       a chosen file.
 
 type Prompt struct {
-	// Flags
-	Interactive, ShowPossibleErrors bool
-
 	history    []string
 	historyIdx int
 
@@ -28,8 +25,8 @@ type Prompt struct {
 	prevErrored bool // Did the previous input have an error?
 }
 
-func New(interactive, showPossibleErrors bool) *Prompt {
-	p := &Prompt{Interactive: interactive, ShowPossibleErrors: showPossibleErrors, historyIdx: 0}
+func New() *Prompt {
+	p := &Prompt{historyIdx: 0}
 	p.history = append(p.history, "")
 
 	return p
@@ -229,7 +226,7 @@ func (p *Prompt) clear() {
 }
 
 func (p *Prompt) Input(prompt, multiLinePrompt string) string {
-	term.InputMode()
+	term.InputMode(!*config.Interactive)
 
 	p.clear()
 
@@ -240,15 +237,17 @@ func (p *Prompt) Input(prompt, multiLinePrompt string) string {
 
 loop:
 	for {
-		var out string
-		if p.Interactive {
-			var err error
-			out, err = highlighter.HighlightLine(*p.line, "stdin")
-			if p.ShowPossibleErrors {
+		out := *p.line
+		if *config.Interactive {
+			highlighted, err := highlighter.HighlightLine(*p.line, "stdin")
+
+			if *config.ShowPossibleErrors {
 				p.renderPossibleErrorLine(err)
 			}
-		} else {
-			out = *p.line
+
+			if *config.SyntaxHighlighting {
+				out = highlighted
+			}
 		}
 
 		term.ClearCursorLine()
