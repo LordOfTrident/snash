@@ -3,9 +3,9 @@ package errors
 import (
 	"fmt"
 
-	"github.com/LordOfTrident/snash/pkg/utils"
-	"github.com/LordOfTrident/snash/pkg/token"
-	"github.com/LordOfTrident/snash/pkg/node"
+	"github.com/LordOfTrident/snash/internal/utils"
+	"github.com/LordOfTrident/snash/internal/token"
+	"github.com/LordOfTrident/snash/internal/node"
 )
 
 type Error struct {

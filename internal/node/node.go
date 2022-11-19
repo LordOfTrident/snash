@@ -1,6 +1,6 @@
 package node
 
-import "github.com/LordOfTrident/snash/pkg/token"
+import "github.com/LordOfTrident/snash/internal/token"
 
 // Base node interface
 

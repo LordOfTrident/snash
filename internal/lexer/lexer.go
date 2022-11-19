@@ -1,9 +1,9 @@
 package lexer
 
 import (
-	"github.com/LordOfTrident/snash/pkg/utils"
-	"github.com/LordOfTrident/snash/pkg/errors"
-	"github.com/LordOfTrident/snash/pkg/token"
+	"github.com/LordOfTrident/snash/internal/utils"
+	"github.com/LordOfTrident/snash/internal/errors"
+	"github.com/LordOfTrident/snash/internal/token"
 )
 
 type Lexer struct {

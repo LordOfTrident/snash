@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"flag"
 
-	"github.com/LordOfTrident/snash/pkg/config"
-	"github.com/LordOfTrident/snash/pkg/attr"
-	"github.com/LordOfTrident/snash/pkg/repl"
-	"github.com/LordOfTrident/snash/pkg/env"
-	"github.com/LordOfTrident/snash/pkg/interpreter"
-	"github.com/LordOfTrident/snash/pkg/highlighter"
+	"github.com/LordOfTrident/snash/internal/config"
+	"github.com/LordOfTrident/snash/internal/attr"
+	"github.com/LordOfTrident/snash/internal/repl"
+	"github.com/LordOfTrident/snash/internal/env"
+	"github.com/LordOfTrident/snash/internal/interpreter"
+	"github.com/LordOfTrident/snash/internal/highlighter"
 )
 
 // 1.0.0: First release, executing simple commands

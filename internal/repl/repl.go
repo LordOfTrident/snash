@@ -3,12 +3,12 @@ package repl
 import (
 	"os"
 
-	"github.com/LordOfTrident/snash/pkg/config"
-	"github.com/LordOfTrident/snash/pkg/env"
-	"github.com/LordOfTrident/snash/pkg/term"
-	"github.com/LordOfTrident/snash/pkg/prompt"
-	"github.com/LordOfTrident/snash/pkg/interpreter"
-	"github.com/LordOfTrident/snash/pkg/highlighter"
+	"github.com/LordOfTrident/snash/internal/config"
+	"github.com/LordOfTrident/snash/internal/env"
+	"github.com/LordOfTrident/snash/internal/term"
+	"github.com/LordOfTrident/snash/internal/prompt"
+	"github.com/LordOfTrident/snash/internal/interpreter"
+	"github.com/LordOfTrident/snash/internal/highlighter"
 )
 
 func REPL(e *env.Env) int {

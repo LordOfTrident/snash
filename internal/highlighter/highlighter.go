@@ -6,11 +6,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/LordOfTrident/snash/pkg/utils"
-	"github.com/LordOfTrident/snash/pkg/errors"
-	"github.com/LordOfTrident/snash/pkg/attr"
-	"github.com/LordOfTrident/snash/pkg/token"
-	"github.com/LordOfTrident/snash/pkg/lexer"
+	"github.com/LordOfTrident/snash/internal/utils"
+	"github.com/LordOfTrident/snash/internal/errors"
+	"github.com/LordOfTrident/snash/internal/attr"
+	"github.com/LordOfTrident/snash/internal/token"
+	"github.com/LordOfTrident/snash/internal/lexer"
 )
 
 const (

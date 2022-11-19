@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/LordOfTrident/snash/pkg/utils"
-	"github.com/LordOfTrident/snash/pkg/config"
-	"github.com/LordOfTrident/snash/pkg/attr"
-	"github.com/LordOfTrident/snash/pkg/term"
-	"github.com/LordOfTrident/snash/pkg/highlighter"
+	"github.com/LordOfTrident/snash/internal/utils"
+	"github.com/LordOfTrident/snash/internal/config"
+	"github.com/LordOfTrident/snash/internal/attr"
+	"github.com/LordOfTrident/snash/internal/term"
+	"github.com/LordOfTrident/snash/internal/highlighter"
 )
 
 // TODO: Multi-line prompt mode, which is gonna be like a text editor field inside the

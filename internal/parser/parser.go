@@ -3,10 +3,10 @@ package parser
 import (
 	"strconv"
 
-	"github.com/LordOfTrident/snash/pkg/errors"
-	"github.com/LordOfTrident/snash/pkg/token"
-	"github.com/LordOfTrident/snash/pkg/lexer"
-	"github.com/LordOfTrident/snash/pkg/node"
+	"github.com/LordOfTrident/snash/internal/errors"
+	"github.com/LordOfTrident/snash/internal/token"
+	"github.com/LordOfTrident/snash/internal/lexer"
+	"github.com/LordOfTrident/snash/internal/node"
 )
 
 func isStatementEnd(tok *token.Token) bool {

@@ -6,10 +6,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/LordOfTrident/snash/pkg/errors"
-	"github.com/LordOfTrident/snash/pkg/node"
-	"github.com/LordOfTrident/snash/pkg/parser"
-	"github.com/LordOfTrident/snash/pkg/env"
+	"github.com/LordOfTrident/snash/internal/errors"
+	"github.com/LordOfTrident/snash/internal/node"
+	"github.com/LordOfTrident/snash/internal/parser"
+	"github.com/LordOfTrident/snash/internal/env"
 )
 
 func Interpret(env *env.Env, source, path string) error {

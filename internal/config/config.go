@@ -5,8 +5,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/LordOfTrident/snash/pkg/utils"
-	"github.com/LordOfTrident/snash/pkg/highlighter"
+	"github.com/LordOfTrident/snash/internal/utils"
+	"github.com/LordOfTrident/snash/internal/highlighter"
 )
 
 const (
