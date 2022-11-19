@@ -2,11 +2,18 @@ package prompt
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/LordOfTrident/snash/pkg/utils"
+	"github.com/LordOfTrident/snash/pkg/config"
 	"github.com/LordOfTrident/snash/pkg/attr"
 	"github.com/LordOfTrident/snash/pkg/term"
 	"github.com/LordOfTrident/snash/pkg/highlighter"
 )
+
+// TODO: Multi-line prompt mode, which is gonna be like a text editor field inside the
+//       command line. Pressing ESC will execute that code, and pressing CTRL+S will save it into
+//       a chosen file.
 
 type Prompt struct {
 	// Flags
@@ -27,6 +34,28 @@ func New(interactive, showPossibleErrors bool) *Prompt {
 	p.history = append(p.history, "")
 
 	return p
+}
+
+func (p *Prompt) SaveHistoryToFile() {
+	if !config.HasFolder() {
+		return
+	}
+
+	// Open history file for appending
+	f, err := os.OpenFile(config.HistoryFile, os.O_APPEND | os.O_WRONLY | os.O_CREATE, 0600)
+	if err != nil {
+		highlighter.PrintError(fmt.Errorf("Could not save history file '%v'", config.HistoryFile))
+	}
+	defer f.Close()
+
+	for _, v := range p.history {
+		// Dont write the last empty line to the history, or any empty lines
+		if len(v) == 0 {
+			continue
+		}
+
+		f.WriteString(v + "\n")
+	}
 }
 
 func (p *Prompt) historyUp() {
@@ -67,6 +96,14 @@ func (p *Prompt) finishInput() (input string) {
 	return
 }
 
+func (p *Prompt) cursorChar() byte {
+	if p.curx == len(*p.line) {
+		return utils.CharNone
+	} else {
+		return (*p.line)[p.curx]
+	}
+}
+
 func (p *Prompt) moveCursorLeft() {
 	if p.curx > 0 {
 		p.curx --
@@ -76,6 +113,49 @@ func (p *Prompt) moveCursorLeft() {
 func (p *Prompt) moveCursorRight() {
 	if p.curx < len(*p.line) {
 		p.curx ++
+	}
+}
+
+func (p *Prompt) moveCursorLeftByWord() {
+	p.moveCursorLeft()
+
+	for utils.IsWhitespace(p.cursorChar()) {
+		if p.curx == 0 {
+			return
+		}
+
+		p.moveCursorLeft()
+	}
+
+	p.moveCursorLeft()
+	for utils.IsAlphanum(p.cursorChar()) || p.cursorChar() == '_' {
+		if p.curx == 0 {
+			return
+		}
+
+		p.moveCursorLeft()
+	}
+
+	p.moveCursorRight()
+}
+
+func (p *Prompt) moveCursorRightByWord() {
+	for utils.IsWhitespace(p.cursorChar()) {
+		p.moveCursorRight()
+
+		if p.curx >= len(*p.line) {
+			return
+		}
+	}
+
+	for utils.IsAlphanum(p.cursorChar()) || p.cursorChar() == '_' {
+		if p.curx >= len(*p.line) {
+			p.moveCursorRight()
+
+			return
+		}
+
+		p.moveCursorRight()
 	}
 }
 
@@ -196,7 +276,12 @@ loop:
 		case term.KeyArrowRight: p.moveCursorRight()
 		case term.KeyArrowLeft:  p.moveCursorLeft()
 
+		case term.KeyCtrlArrowRight: p.moveCursorRightByWord()
+		case term.KeyCtrlArrowLeft:  p.moveCursorLeftByWord()
+
 		case term.KeyResize:
+
+		case term.Ctrl(term.Key('s')):
 
 		default:
 			if key >= term.Key(' ') && key <= term.Key('~') {

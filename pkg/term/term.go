@@ -39,6 +39,17 @@ const (
 	KeyTab       = Key('\t')
 )
 
+func Ctrl(key Key) Key {
+	switch key {
+	case KeyArrowUp:    return KeyCtrlArrowUp
+	case KeyArrowDown:  return KeyCtrlArrowDown
+	case KeyArrowLeft:  return KeyCtrlArrowLeft
+	case KeyArrowRight: return KeyCtrlArrowRight
+
+	default: return Key(int(key) & 31)
+	}
+}
+
 func Init() {
 	// Ignore CTRL+C
 	c := make(chan os.Signal, 1)
@@ -65,7 +76,8 @@ func RestoreMode() {
 func InputMode() {
 	// Some terminal attributes so we can easily read each key press
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
-	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+	exec.Command("stty", "-F", "/dev/tty", "-echo").Run() // No input echo
+	exec.Command("stty", "-F", "/dev/tty", "-ixon").Run() // Recieve CTRL+S
 }
 
 // 'stty size' output format is '<HEIGHT> <WIDTH>'
@@ -162,10 +174,10 @@ func GetKey() (key Key) {
 		case 6: // CTRL + arrow keys sequence
 			if in[2] == 49 && in[3] == 59 && in[4] == 53 {
 				switch in[5] {
-				case 'A': key = KeyCtrlArrowUp
-				case 'B': key = KeyCtrlArrowDown
-				case 'C': key = KeyCtrlArrowRight
-				case 'D': key = KeyCtrlArrowLeft
+				case 'A': key = Ctrl(KeyArrowUp)
+				case 'B': key = Ctrl(KeyArrowDown)
+				case 'C': key = Ctrl(KeyArrowRight)
+				case 'D': key = Ctrl(KeyArrowLeft)
 				}
 			}
 		}

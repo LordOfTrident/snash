@@ -78,14 +78,3 @@ func NewError(where Where, txtLen int, format string, args... interface{}) Token
 func NewEOF(where Where) Token {
 	return New(EOF, "", where, 0)
 }
-
-func (tok Token) String() string {
-	// For outputting better errors
-
-	switch tok.Type {
-	case Separator: return "separator (';' or new line)"
-	case EOF:       return "end of file"
-
-	default: return fmt.Sprintf("'%v' of type '%v'", tok.Data, tok.Type)
-	}
-}

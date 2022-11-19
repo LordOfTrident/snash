@@ -3,6 +3,7 @@ package repl
 import (
 	"os"
 
+	"github.com/LordOfTrident/snash/pkg/config"
 	"github.com/LordOfTrident/snash/pkg/env"
 	"github.com/LordOfTrident/snash/pkg/term"
 	"github.com/LordOfTrident/snash/pkg/prompt"
@@ -10,10 +11,10 @@ import (
 	"github.com/LordOfTrident/snash/pkg/highlighter"
 )
 
-func REPL(e *env.Env, interactive, showPossibleErrors bool) int {
+func REPL(e *env.Env) int {
 	term.Init()
 
-	p := prompt.New(interactive, showPossibleErrors)
+	p := prompt.New(*config.Interactive, *config.ShowPossibleErrors)
 
 	for {
 		e.UpdateVars()
@@ -38,6 +39,8 @@ func REPL(e *env.Env, interactive, showPossibleErrors bool) int {
 			break
 		}
 	}
+
+	p.SaveHistoryToFile()
 
 	return e.Ex
 }

@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/LordOfTrident/snash/pkg/utils"
 	"github.com/LordOfTrident/snash/pkg/errors"
 	"github.com/LordOfTrident/snash/pkg/attr"
 	"github.com/LordOfTrident/snash/pkg/token"
@@ -26,6 +27,10 @@ const (
 func PrintError(err error) {
 	fmt.Fprintf(os.Stderr, "%v%vError:%v %v\n", attr.Bold, attr.BrightRed, attr.Reset,
 	            HighlightStrings(err.Error()))
+}
+
+func Printf(format string, args... interface{}) {
+	fmt.Print(HighlightStrings(fmt.Sprintf(format, args...)))
 }
 
 func cmdExists(name string) bool {
@@ -53,14 +58,14 @@ func isCmd(toks []token.Token, i int) (isCmd bool) {
 }
 
 func HighlightStrings(str string) (ret string) {
-	apostrophe := lexer.CharNone
+	apostrophe := utils.CharNone
 	escape     := false
 
 	for _, ch := range str {
 		ch := byte(ch)
 
 		switch ch {
-		case '\'', '"':
+		case '\'', '"', '`':
 			if escape {
 				escape = false
 				ret += string(ch) + attr.Reset + colorString
@@ -70,20 +75,20 @@ func HighlightStrings(str string) (ret string) {
 				// Find out if it is an end marking apostrophe, a beginning one or just a part
 				// of the string
 				if apostrophe == ch {
-					apostrophe = lexer.CharNone
+					apostrophe = utils.CharNone
 
 					ret += string(ch) + attr.Reset
 
 					continue // We already added the character to the string
-				} else if apostrophe == lexer.CharNone {
+				} else if apostrophe == utils.CharNone {
 					apostrophe = ch
 					ret += colorString
 				}
 			}
 
 		case '\\':
-			if apostrophe == '"' { // Escape sequences are not allowed
-				if escape {        // outside of " apostrophes
+			if apostrophe == '"' || apostrophe == '`' { // Escape sequences are only allowed
+				if escape {                             // inside of " and ` apostrophes
 					escape = false
 
 					ret += string(ch) + attr.Reset + colorString

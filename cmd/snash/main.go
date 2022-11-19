@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"flag"
 
+	"github.com/LordOfTrident/snash/pkg/config"
 	"github.com/LordOfTrident/snash/pkg/attr"
 	"github.com/LordOfTrident/snash/pkg/repl"
 	"github.com/LordOfTrident/snash/pkg/env"
@@ -14,27 +15,16 @@ import (
 
 // 1.0.0: First release, executing simple commands
 // 1.1.0: Added an interactive REPL
-// 1.1.1: Add command line flags
-// 1.1.2: Ignore CTRL+C
-// 1.2.2: Add an option to print possible input errors under the prompt
-// 1.2.3: Improve syntax highlighting
-// 1.2.4: Fix string escape sequences
-// 1.2.5: Unescape error strings
+// 1.2.0: Add command line flags
+// 1.2.1: Ignore CTRL+C
+// 1.3.1: Add an option to print possible input errors under the prompt
+// 1.3.2: Improve syntax highlighting
+// 1.3.3: Fix string escape sequences
+// 1.3.4: Unescape error strings
+// 1.4.4: CTRL + arrow keys cursor movement
+// 1.5.4: Config folder + REPL history file
 
-const (
-	appName = "snash"
-
-	versionMajor = 1
-	versionMinor = 2
-	versionPatch = 5
-)
-
-var (
-	showVersion = flag.Bool("version", false, "Show the version")
-
-	interactive        = flag.Bool("interactive",        true, "Interactive REPL mode")
-	showPossibleErrors = flag.Bool("showPossibleErrors", true, "Print the possible input errors")
-)
+var showVersion = flag.Bool("version", false, "Show the version")
 
 var e = env.New()
 
@@ -66,7 +56,8 @@ func usage() {
 }
 
 func version() {
-	fmt.Printf("%v %v.%v.%v\n", appName, versionMajor, versionMinor, versionPatch)
+	fmt.Printf("%v %v.%v.%v\n",
+	           config.AppName, config.VersionMajor, config.VersionMinor, config.VersionPatch)
 }
 
 func init() {
@@ -95,6 +86,8 @@ func main() {
 		return
 	}
 
+	config.FixFolder()
+
 	if len(flag.Args()) > 0 {
 		ex := 0
 
@@ -105,6 +98,6 @@ func main() {
 
 		os.Exit(ex)
 	} else {
-		os.Exit(repl.REPL(e, *interactive, *showPossibleErrors))
+		os.Exit(repl.REPL(e))
 	}
 }

@@ -1,35 +1,10 @@
 package lexer
 
 import (
+	"github.com/LordOfTrident/snash/pkg/utils"
 	"github.com/LordOfTrident/snash/pkg/errors"
 	"github.com/LordOfTrident/snash/pkg/token"
 )
-
-const CharNone byte = 0
-
-func IsWhitespace(char byte) bool {
-	switch char {
-	case ' ', '\r', '\t', '\v', '\f': return true
-
-	default: return false
-	}
-}
-
-func IsSeparator(char byte) bool {
-	switch char {
-	case ' ', '\r', '\t', '\n', '\v', '\f', ';': return true
-
-	default: return false
-	}
-}
-
-func IsAlpha(char byte) bool {
-	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
-}
-
-func IsDigit(char byte) bool {
-	return char >= '0' && char <= '9'
-}
 
 type Lexer struct {
 	where token.Where
@@ -68,7 +43,7 @@ func (l *Lexer) NextToken() (tok token.Token) {
 	for {
 		switch l.char {
 		// EOF token marks the source end
-		case CharNone: tok = token.NewEOF(l.where)
+		case utils.CharNone: tok = token.NewEOF(l.where)
 
 		case '\n', ';':
 			tok = token.New(token.Separator, "", l.where, 1)
@@ -86,7 +61,7 @@ func (l *Lexer) NextToken() (tok token.Token) {
 			continue
 
 		default:
-			if IsDigit(l.char) {
+			if utils.IsDigit(l.char) {
 				tok = l.lexInteger()
 			} else {
 				tok = l.lexString()
@@ -104,7 +79,7 @@ func (l *Lexer) next() {
 
 	// Make sure we wont exceed the source code length
 	if l.idx >= len(l.source) {
-		l.char = CharNone
+		l.char = utils.CharNone
 	} else {
 		l.char = l.source[l.idx]
 	}
@@ -120,14 +95,14 @@ func (l *Lexer) next() {
 
 func (l *Lexer) peekChar() byte {
 	if l.idx + 1 >= len(l.source) {
-		return CharNone
+		return utils.CharNone
 	} else {
 		return l.source[l.idx + 1]
 	}
 }
 
 func (l *Lexer) skipComment() {
-	for l.char != CharNone && l.char != '\n' {
+	for l.char != utils.CharNone && l.char != '\n' {
 		l.next()
 	}
 }
@@ -136,20 +111,23 @@ func (l *Lexer) lexString() token.Token {
 	start := l.where // The starting position of the token
 	str   := ""      // The token data string
 
-	apostrophe := CharNone // To save the current apostrophe we are using
-	escape     := false    // Are we inside an escape sequence?
+	apostrophe := utils.CharNone // To save the current apostrophe we are using
+	escape     := false           // Are we inside an escape sequence?
 
 	isWord := true // A flag to see if the string could be a keyword
 
-	// TODO: finish this function
-	for ; l.char != CharNone && (apostrophe != CharNone || !IsSeparator(l.char)); l.next() {
-		if isWord {
-			isWord = IsAlpha(l.char)
-		}
-
+loop:
+	for ; apostrophe != utils.CharNone || !utils.IsSeparator(l.char); l.next() {
 		switch l.char {
+		case utils.CharNone:
+			if apostrophe == utils.CharNone {
+				break loop
+			} else {
+				return token.NewError(start, l.where.Col - start.Col, "String not terminated")
+			}
+
 		// Whitespaces and other special characters are allowed inside apostrophes
-		case '\'', '"':
+		case '\'', '"', '`':
 			if escape {
 				// If we are escaping the apostrophe, add it to the string
 				str += string(l.char)
@@ -159,15 +137,17 @@ func (l *Lexer) lexString() token.Token {
 				// Find out if it is an end marking apostrophe, a beginning one or just a part
 				// of the string
 				if apostrophe == l.char {
-					apostrophe = CharNone
-				} else if apostrophe == CharNone {
+					apostrophe = utils.CharNone
+				} else if apostrophe == utils.CharNone {
 					apostrophe = l.char
+				} else {
+					str += string(l.char)
 				}
 			}
 
 		case '\\':
-			if apostrophe != '"' { // Escape sequences are not allowed
-			                       // outside of " apostrophes
+			if apostrophe != '"' && apostrophe != '`' { // Escape sequences are only allowed
+			                                            // inside of " and ` apostrophes
 				str += string(l.char)
 			} else if escape {
 				str += string(l.char)
@@ -175,6 +155,14 @@ func (l *Lexer) lexString() token.Token {
 				escape = false
 			} else {
 				escape = true
+			}
+
+		case '\n':
+			// Multi line strings
+			if apostrophe == '`' {
+				str += string(l.char)
+			} else {
+				return token.NewError(start, l.where.Col - start.Col, "String exceeds line")
 			}
 
 		default:
@@ -199,10 +187,10 @@ func (l *Lexer) lexString() token.Token {
 				str += string(l.char)
 			}
 		}
-	}
 
-	if apostrophe != CharNone {
-		return token.NewError(start, l.where.Col - start.Col, "String exceeds line")
+		if isWord {
+			isWord = utils.IsAlpha(l.char)
+		}
 	}
 
 	// Check if the string is a keyword
@@ -228,8 +216,8 @@ func (l *Lexer) lexInteger() token.Token {
 	str   := ""      // The token data string
 
 	// TODO: make tokens like '123abc' not error and instead be lexer as strings
-	for ; l.char != CharNone && !IsSeparator(l.char); l.next() {
-		if !IsDigit(l.char) {
+	for ; l.char != utils.CharNone && !utils.IsSeparator(l.char); l.next() {
+		if !utils.IsDigit(l.char) {
 			return token.NewError(start, l.where.Col - start.Col,
 			                      "Unexpected character '%c' in number", l.char)
 		}
