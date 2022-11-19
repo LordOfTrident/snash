@@ -14,7 +14,7 @@ const (
 
 	VersionMajor = 1
 	VersionMinor = 6
-	VersionPatch = 4
+	VersionPatch = 5
 )
 
 var (

@@ -24,6 +24,7 @@ import (
 // 1.4.4: CTRL + arrow keys cursor movement
 // 1.5.4: Config folder + REPL history file
 // 1.6.4: Syntax highlighting flag, make ixon not be disabled when the mode is not interactive
+// 1.6.5: Remove ignore marker characters from the prompt when it is rendered
 
 var showVersion = flag.Bool("version", false, "Show the version")
 

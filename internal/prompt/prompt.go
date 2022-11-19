@@ -3,6 +3,7 @@ package prompt
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/LordOfTrident/snash/internal/utils"
 	"github.com/LordOfTrident/snash/internal/config"
@@ -179,8 +180,15 @@ func getLastPromptLine(prompt string) (lastLine string, lastLineLen int) {
 	for _, ch := range prompt {
 		// Ignore characters marked to be ignored
 		switch ch {
-		case 1: skip = true
-		case 2: skip = false
+		case 1:
+			skip = true
+
+			continue
+
+		case 2:
+			skip = false
+
+			continue
 		}
 
 		lastLine += string(ch)
@@ -232,6 +240,10 @@ func (p *Prompt) Input(prompt, multiLinePrompt string) string {
 
 	promptLastLine, _ := getLastPromptLine(prompt)
 	//promptLastLine, promptLastLineLen := getLastPromptLine(prompt)
+
+	// Remove the ignore marking characters
+	prompt = strings.Replace(prompt, "\x01", "", -1)
+	prompt = strings.Replace(prompt, "\x02", "", -1)
 
 	fmt.Print(prompt) // Output all lines of the prompt
 
