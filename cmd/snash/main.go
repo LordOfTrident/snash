@@ -6,11 +6,11 @@ import (
 	"flag"
 
 	"github.com/LordOfTrident/snash/internal/config"
-	"github.com/LordOfTrident/snash/internal/attr"
 	"github.com/LordOfTrident/snash/internal/repl"
 	"github.com/LordOfTrident/snash/internal/env"
 	"github.com/LordOfTrident/snash/internal/interpreter"
 	"github.com/LordOfTrident/snash/internal/highlighter"
+	"github.com/LordOfTrident/snash/internal/term"
 )
 
 // 1.0.0: First release, executing simple commands
@@ -65,8 +65,8 @@ func init() {
 	os.Setenv("SHELL", os.Args[0])
 
 	os.Setenv("PROMPT",     "\\u@\\h \\w $ ")
-	os.Setenv("PROMPT_ERR", "\\u@\\h \\w [\\[" + attr.Bold + attr.BrightRed + "\\]\\ex" +
-	                        "\\[" + attr.Reset + "\\]] $ ")
+	os.Setenv("PROMPT_ERR", "\\u@\\h \\w [\\[" + term.AttrBold + term.AttrBrightRed + "\\]\\ex" +
+	                        "\\[" + term.AttrReset + "\\]] $ ")
 	os.Setenv("PROMPT_MULTILINE", "> ")
 
 	// Flag related things

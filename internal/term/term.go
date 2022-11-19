@@ -10,12 +10,38 @@ import (
 	"strings"
 )
 
-var mode string
+const (
+	AttrReset     = "\x1b[0m"
+	AttrBold      = "\x1b[1m"
+	AttrItalics   = "\x1b[3m"
+	AttrUnderline = "\x1b[4m"
+	AttrBlink     = "\x1b[5m"
+
+	AttrBlack   = "\x1b[30m"
+	AttrRed     = "\x1b[31m"
+	AttrGreen   = "\x1b[32m"
+	AttrYellow  = "\x1b[33m"
+	AttrBlue    = "\x1b[34m"
+	AttrMagenta = "\x1b[35m"
+	AttrCyan    = "\x1b[36m"
+	AttrWhite   = "\x1b[37m"
+
+	AttrGrey          = "\x1b[90m"
+	AttrBrightRed     = "\x1b[91m"
+	AttrBrightGreen   = "\x1b[92m"
+	AttrBrightYellow  = "\x1b[93m"
+	AttrBrightBlue    = "\x1b[94m"
+	AttrBrightMagenta = "\x1b[95m"
+	AttrBrightCyan    = "\x1b[96m"
+	AttrBrightWhite   = "\x1b[97m"
+)
 
 var (
 	Width  = 0
 	Height = 0
 )
+
+var mode string
 
 type Key int
 const (

@@ -8,24 +8,24 @@ import (
 
 	"github.com/LordOfTrident/snash/internal/utils"
 	"github.com/LordOfTrident/snash/internal/errors"
-	"github.com/LordOfTrident/snash/internal/attr"
+	"github.com/LordOfTrident/snash/internal/term"
 	"github.com/LordOfTrident/snash/internal/token"
 	"github.com/LordOfTrident/snash/internal/lexer"
 )
 
 const (
-	colorError   = attr.Underline + attr.BrightRed
-	colorComment = attr.Italics   + attr.Grey
-	colorKeyword = attr.Bold      + attr.BrightBlue
-	colorCmd     = attr.Bold      + attr.BrightYellow
-	colorInteger = attr.BrightCyan
-	colorPath    = attr.Underline + attr.BrightGreen
-	colorEscape  = attr.BrightMagenta
-	colorString  = attr.BrightGreen
+	colorError   = term.AttrUnderline + term.AttrBrightRed
+	colorComment = term.AttrItalics   + term.AttrGrey
+	colorKeyword = term.AttrBold      + term.AttrBrightBlue
+	colorCmd     = term.AttrBold      + term.AttrBrightYellow
+	colorInteger = term.AttrBrightCyan
+	colorPath    = term.AttrUnderline + term.AttrBrightGreen
+	colorEscape  = term.AttrBrightMagenta
+	colorString  = term.AttrBrightGreen
 )
 
 func PrintError(err error) {
-	fmt.Fprintf(os.Stderr, "%v%vError:%v %v\n", attr.Bold, attr.BrightRed, attr.Reset,
+	fmt.Fprintf(os.Stderr, "%v%vError:%v %v\n", term.AttrBold, term.AttrBrightRed, term.AttrReset,
 	            HighlightStrings(err.Error()))
 }
 
@@ -68,7 +68,7 @@ func HighlightStrings(str string) (ret string) {
 		case '\'', '"', '`':
 			if escape {
 				escape = false
-				ret += string(ch) + attr.Reset + colorString
+				ret += string(ch) + term.AttrReset + colorString
 
 				continue
 			} else {
@@ -77,7 +77,7 @@ func HighlightStrings(str string) (ret string) {
 				if apostrophe == ch {
 					apostrophe = utils.CharNone
 
-					ret += string(ch) + attr.Reset
+					ret += string(ch) + term.AttrReset
 
 					continue // We already added the character to the string
 				} else if apostrophe == utils.CharNone {
@@ -91,7 +91,7 @@ func HighlightStrings(str string) (ret string) {
 				if escape {                             // inside of " and ` apostrophes
 					escape = false
 
-					ret += string(ch) + attr.Reset + colorString
+					ret += string(ch) + term.AttrReset + colorString
 
 					continue
 				} else {
@@ -102,7 +102,7 @@ func HighlightStrings(str string) (ret string) {
 
 		default:
 			if escape {
-				ret += string(ch) + attr.Reset + colorString
+				ret += string(ch) + term.AttrReset + colorString
 
 				continue
 			}
@@ -158,7 +158,7 @@ func highlightNext(toks []token.Token, i int, line string) (highlighted string, 
 		}
 	}
 
-	highlighted += attr.Reset
+	highlighted += term.AttrReset
 
 	return
 }
@@ -190,7 +190,7 @@ func HighlightLine(line, path string) (out string, firstErr error) {
 		out += next
 	}
 
-	out += attr.Reset
+	out += term.AttrReset
 
 	return
 }

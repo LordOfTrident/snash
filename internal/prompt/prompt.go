@@ -6,7 +6,6 @@ import (
 
 	"github.com/LordOfTrident/snash/internal/utils"
 	"github.com/LordOfTrident/snash/internal/config"
-	"github.com/LordOfTrident/snash/internal/attr"
 	"github.com/LordOfTrident/snash/internal/term"
 	"github.com/LordOfTrident/snash/internal/highlighter"
 )
@@ -207,7 +206,7 @@ func (p *Prompt) renderPossibleErrorLine(err error) {
 		// Render the error line
 		term.NewLine()
 		term.ClearCursorLine()
-		fmt.Printf("%vError: %v%v", attr.Grey, err.Error(), attr.Reset)
+		fmt.Printf("%vError: %v%v", term.AttrGrey, err.Error(), term.AttrReset)
 		term.MoveCursorUp(1)
 
 		p.prevErrored = true
