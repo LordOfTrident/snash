@@ -42,6 +42,7 @@ $ ./bin/app
 - [ ] Aliases
 - [ ] If statements
 - [ ] Functions
+- [ ] Piping and redirecting output
 - [ ] Auto completion
 - [ ] Loops
 
