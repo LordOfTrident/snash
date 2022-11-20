@@ -8,7 +8,7 @@ import (
 	"github.com/LordOfTrident/snash/internal/config"
 	"github.com/LordOfTrident/snash/internal/repl"
 	"github.com/LordOfTrident/snash/internal/env"
-	"github.com/LordOfTrident/snash/internal/interpreter"
+	"github.com/LordOfTrident/snash/internal/evaluator"
 	"github.com/LordOfTrident/snash/internal/highlighter"
 	"github.com/LordOfTrident/snash/internal/term"
 )
@@ -25,6 +25,7 @@ import (
 // 1.5.4: Config folder + REPL history file
 // 1.6.4: Syntax highlighting flag, make ixon not be disabled when the mode is not interactive
 // 1.6.5: Remove ignore marker characters from the prompt when it is rendered
+// 1.7.5: Add logical and, or operators
 
 var showVersion = flag.Bool("version", false, "Show the version")
 
@@ -40,7 +41,7 @@ func execScript(path string) int {
 
 	e.UpdateVars()
 
-	err = interpreter.Interpret(e, string(data), path)
+	err = evaluator.Eval(e, string(data), path)
 	if err != nil {
 		highlighter.PrintError(err)
 

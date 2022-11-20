@@ -60,6 +60,9 @@ func (l *Lexer) NextToken() (tok token.Token) {
 
 			continue
 
+		case '&': tok = l.lexAnd()
+		case '|': tok = l.lexOr()
+
 		default:
 			if utils.IsDigit(l.char) {
 				tok = l.lexInteger()
@@ -74,37 +77,37 @@ func (l *Lexer) NextToken() (tok token.Token) {
 	return
 }
 
-func (l *Lexer) next() {
-	l.idx ++
-
-	// Make sure we wont exceed the source code length
-	if l.idx >= len(l.source) {
-		l.char = utils.CharNone
-	} else {
-		l.char = l.source[l.idx]
-	}
-
-	// Update position variables
-	if l.char == '\n' {
-		l.where.Col = 0
-		l.where.Row ++
-	} else {
-		l.where.Col ++
-	}
-}
-
-func (l *Lexer) peekChar() byte {
-	if l.idx + 1 >= len(l.source) {
-		return utils.CharNone
-	} else {
-		return l.source[l.idx + 1]
-	}
-}
-
 func (l *Lexer) skipComment() {
 	for l.char != utils.CharNone && l.char != '\n' {
 		l.next()
 	}
+}
+
+func (l *Lexer) lexAnd() token.Token {
+	start := l.where
+
+	if l.next(); l.char != '&' {
+		return token.NewError(start, 1,
+		                      "Unexpected character \"&\", did you mean \"&&\"?")
+	}
+
+	l.next()
+
+	return token.New(token.And, "&&", start, 2)
+}
+
+func (l *Lexer) lexOr() token.Token {
+	start := l.where
+
+	// TODO: Add piping
+	if l.next(); l.char != '|' {
+		return token.NewError(start, 1,
+		                      "Unexpected character \"|\", did you mean \"||\"?")
+	}
+
+	l.next()
+
+	return token.New(token.And, "||", start, 2)
 }
 
 func (l *Lexer) lexString() token.Token {
@@ -179,7 +182,7 @@ loop:
 
 				default:
 					return token.NewError(start, l.where.Col - start.Col,
-					                      "Unknown escape sequence '\\%c'", l.char)
+					                      "Unknown escape sequence \"\\%c\"", l.char)
 				}
 
 				escape = false
@@ -203,11 +206,38 @@ loop:
 
 func getWordTokenType(word string) token.Type {
 	switch word {
-	case "exit": return token.KeywordExit
-	case "echo": return token.KeywordEcho
-	case "cd":   return token.KeywordCd
+	case "exit": return token.Exit
+	case "echo": return token.Echo
+	case "cd":   return token.Cd
 
 	default: return token.String
+	}
+}
+
+func (l *Lexer) next() {
+	l.idx ++
+
+	// Make sure we wont exceed the source code length
+	if l.idx >= len(l.source) {
+		l.char = utils.CharNone
+	} else {
+		l.char = l.source[l.idx]
+	}
+
+	// Update position variables
+	if l.char == '\n' {
+		l.where.Col = 0
+		l.where.Row ++
+	} else {
+		l.where.Col ++
+	}
+}
+
+func (l *Lexer) peekChar() byte {
+	if l.idx + 1 >= len(l.source) {
+		return utils.CharNone
+	} else {
+		return l.source[l.idx + 1]
 	}
 }
 
@@ -219,7 +249,7 @@ func (l *Lexer) lexInteger() token.Token {
 	for ; l.char != utils.CharNone && !utils.IsSeparator(l.char); l.next() {
 		if !utils.IsDigit(l.char) {
 			return token.NewError(start, l.where.Col - start.Col,
-			                      "Unexpected character '%c' in number", l.char)
+			                      "Unexpected character \"%c\" in number", l.char)
 		}
 
 		str += string(l.char)

@@ -13,7 +13,7 @@ const (
 	AppName = "snash"
 
 	VersionMajor = 1
-	VersionMinor = 6
+	VersionMinor = 7
 	VersionPatch = 5
 )
 

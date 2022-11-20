@@ -6,7 +6,7 @@ import (
 	"github.com/LordOfTrident/snash/internal/env"
 	"github.com/LordOfTrident/snash/internal/term"
 	"github.com/LordOfTrident/snash/internal/prompt"
-	"github.com/LordOfTrident/snash/internal/interpreter"
+	"github.com/LordOfTrident/snash/internal/evaluator"
 	"github.com/LordOfTrident/snash/internal/highlighter"
 )
 
@@ -28,7 +28,7 @@ func REPL(e *env.Env) int {
 
 		in := p.Input(prompt, e.GenPrompt(os.Getenv("PROMPT_MULTILINE")))
 
-		err := interpreter.Interpret(e, in, "stdin")
+		err := evaluator.Eval(e, in, "stdin")
 		if err != nil {
 			highlighter.PrintError(err)
 		}

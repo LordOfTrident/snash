@@ -9,15 +9,23 @@ import (
 	"github.com/LordOfTrident/snash/internal/node"
 )
 
-func isStatementEnd(tok *token.Token) bool {
-	return tok.Type == token.Separator || tok.Type == token.EOF
-}
-
 type Parser struct {
 	idx int
 	tok *token.Token
 
 	Toks []token.Token
+}
+
+func isStatementEnd(tok *token.Token) bool {
+	return tok.Type == token.Separator || tok.Type == token.EOF
+}
+
+func isLogicalOp(tok *token.Token) bool {
+	return tok.Type == token.And || tok.Type == token.Or
+}
+
+func isFactorEnd(tok *token.Token) bool {
+	return isLogicalOp(tok) || isStatementEnd(tok)
 }
 
 func New(source, path string) (*Parser, error) {
@@ -41,21 +49,21 @@ func NewFromTokens(toks []token.Token) *Parser {
 }
 
 func (p *Parser) Parse() (node.Statements, error) {
-	var program node.Statements
+	var statements node.Statements
 
 	for statement, err := p.NextStatement(); true; statement, err = p.NextStatement() {
 		if err != nil {
-			return program, err
+			return statements, err
 		}
 
 		if statement == nil {
 			break
 		}
 
-		program.List = append(program.List, statement)
+		statements.List = append(statements.List, statement)
 	}
 
-	return program, nil
+	return statements, nil
 }
 
 func (p *Parser) NextStatement() (node.Statement, error) {
@@ -63,34 +71,61 @@ func (p *Parser) NextStatement() (node.Statement, error) {
 		switch p.tok.Type {
 		case token.EOF: return nil, nil
 
-		case token.String:      return p.parseCmd()
-		case token.KeywordExit: return p.parseExit()
-		case token.KeywordEcho: return p.parseEcho()
-		case token.KeywordCd:   return p.parseCd()
-
 		case token.Separator:
 			p.next()
 
 			continue
 
-		default: return nil, errors.UnexpectedToken(p.tok)
+		default: return p.parseLogicalOp()
 		}
 	}
 }
 
-func (p *Parser) next() {
-	// Make sure to not run over the source end
-	if p.idx + 1 < len(p.Toks) {
-		p.idx ++
-		p.tok = &p.Toks[p.idx]
+func (p *Parser) parseLogicalOp() (node.Statement, error) {
+	left, err := p.parseFactor()
+	if err != nil {
+		return nil, err
 	}
+
+	// If there are no logical operators, just return the parsed node
+	if isStatementEnd(p.tok) {
+		return left, nil
+	}
+
+	// Else parse the logical operators
+	for isLogicalOp(p.tok) {
+		tok := *p.tok // Save the operator token for the operator node
+		p.next()
+
+		right, err := p.parseFactor()
+		if err != nil {
+			return nil, err
+		}
+
+		var type_ int
+		switch tok.Type {
+		case token.And: type_ = node.LogicalAnd
+		case token.Or:  type_ = node.LogicalOr
+		}
+
+		left = &node.LogicalOpStatement{Type: type_, Left: left, Right: right}
+
+		if isStatementEnd(p.tok) {
+			break
+		}
+	}
+
+	return left, nil
 }
 
-func (p *Parser) peekTok() token.Token {
-	if p.tok.Type == token.EOF {
-		return *p.tok
-	} else {
-		return p.Toks[p.idx + 1]
+func (p *Parser) parseFactor() (node.Statement, error) {
+	switch p.tok.Type {
+	case token.String: return p.parseCmd()
+	case token.Exit:   return p.parseExit()
+	case token.Echo:   return p.parseEcho()
+	case token.Cd:     return p.parseCd()
+
+	default: return nil, errors.UnexpectedToken(p.tok)
 	}
 }
 
@@ -98,7 +133,7 @@ func (p *Parser) parseCmd() (*node.CmdStatement, error) {
 	cs := &node.CmdStatement{Token: *p.tok, Cmd: p.tok.Data}
 
 	// Get the command arguments
-	for p.next(); !isStatementEnd(p.tok); p.next() {
+	for p.next(); !isFactorEnd(p.tok); p.next() {
 		var arg string
 
 		switch p.tok.Type {
@@ -120,7 +155,7 @@ func (p *Parser) parseExit() (*node.ExitStatement, error) {
 	// Exitcodes have to be integers
 
 	// If there is just an exit token alone, we will use the latest exitcode to exit
-	if p.next(); isStatementEnd(p.tok) {
+	if p.next(); isFactorEnd(p.tok) {
 		es.HasEx = false // The statement has no requested exitcode
 	} else if p.tok.Type == token.Integer {
 		// If there is a requested exitcode, save it
@@ -139,7 +174,7 @@ func (p *Parser) parseExit() (*node.ExitStatement, error) {
 	}
 
 	// Make sure the statement is ended
-	if !isStatementEnd(p.tok) {
+	if !isFactorEnd(p.tok) {
 		return nil, errors.ExpectedToken(p.tok, token.Separator)
 	}
 
@@ -152,7 +187,7 @@ func (p *Parser) parseEcho() (*node.EchoStatement, error) {
 	echo := &node.EchoStatement{Token: *p.tok}
 
 	// Append all the arguments to a string
-	for p.next(); !isStatementEnd(p.tok); p.next() {
+	for p.next(); !isFactorEnd(p.tok); p.next() {
 		switch p.tok.Type {
 		case token.String, token.Integer: echo.Msg += p.tok.Data + " "
 
@@ -167,7 +202,7 @@ func (p *Parser) parseCd() (*node.CdStatement, error) {
 	cd := &node.CdStatement{Token: *p.tok}
 
 	// If no path is specified, we change the directory to the home directory
-	if p.next(); isStatementEnd(p.tok) {
+	if p.next(); isFactorEnd(p.tok) {
 		cd.Path = "~/"
 	} else if p.tok.Type == token.String {
 		cd.Path = p.tok.Data
@@ -178,4 +213,20 @@ func (p *Parser) parseCd() (*node.CdStatement, error) {
 	}
 
 	return cd, nil
+}
+
+func (p *Parser) next() {
+	// Make sure to not run over the source end
+	if p.idx + 1 < len(p.Toks) {
+		p.idx ++
+		p.tok = &p.Toks[p.idx]
+	}
+}
+
+func (p *Parser) peekTok() token.Token {
+	if p.tok.Type == token.EOF {
+		return *p.tok
+	} else {
+		return p.Toks[p.idx + 1]
+	}
 }

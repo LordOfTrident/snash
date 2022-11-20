@@ -17,45 +17,43 @@ type Type int
 const (
 	EOF = iota
 
-	String
 	Integer
+	String
 	Separator
 
-	KeywordExit
-	KeywordEcho
-	KeywordCd
+	Exit
+	Echo
+	Cd
+
+	And
+	Or
 
 	Error
 	count // Count of all token types
 )
 
 func (type_ Type) String() string {
-	if count != 8 {
+	if count != 10 {
 		panic("Cover all token types")
 	}
 
 	switch type_ {
 	case EOF: return "end of file"
 
-	case String:    return "string"
 	case Integer:   return "integer"
+	case String:    return "string"
 	case Separator: return "separator"
 
-	case KeywordExit: return "keyword exit"
-	case KeywordEcho: return "keyword echo"
-	case KeywordCd:   return "keyword cd"
+	case Exit: return "keyword exit"
+	case Echo: return "keyword echo"
+	case Cd:   return "keyword cd"
+
+	case And: return "logical and"
+	case Or:  return "logical or"
 
 	case Error: return "error"
 
 	default: panic("Unreachable")
-	}
-}
-
-func (type_ Type) IsKeyword() bool {
-	switch type_ {
-	case KeywordExit, KeywordEcho, KeywordCd: return true
-
-	default: return false
 	}
 }
 

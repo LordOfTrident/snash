@@ -72,6 +72,30 @@ func (cd *CdStatement) NodeTypeToString() string {
 	return "cd statement"
 }
 
+// And
+
+const (
+	LogicalAnd = iota
+	LogicalOr
+)
+
+type LogicalOpStatement struct {
+	Token token.Token
+
+	Type        int
+	Left, Right Statement
+}
+
+func (lo *LogicalOpStatement) statementNode() {}
+
+func (lo *LogicalOpStatement) NodeToken() token.Token {
+	return lo.Token
+}
+
+func (lo *LogicalOpStatement) NodeTypeToString() string {
+	return "logical operator statement"
+}
+
 // Command
 
 type CmdStatement struct {

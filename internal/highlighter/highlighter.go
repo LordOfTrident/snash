@@ -14,15 +14,32 @@ import (
 )
 
 const (
-	colorError   = term.AttrUnderline + term.AttrBrightRed
-	colorComment = term.AttrItalics   + term.AttrGrey
-	colorKeyword = term.AttrBold      + term.AttrBrightBlue
-	colorCmd     = term.AttrBold      + term.AttrBrightYellow
-	colorInteger = term.AttrBrightCyan
-	colorPath    = term.AttrUnderline + term.AttrBrightGreen
-	colorEscape  = term.AttrBrightMagenta
-	colorString  = term.AttrBrightGreen
+	colorError    = term.AttrUnderline + term.AttrBrightRed
+	colorComment  = term.AttrItalics   + term.AttrGrey
+	colorKeyword  = term.AttrBold      + term.AttrBrightBlue
+	colorOperator = term.AttrBold      + term.AttrMagenta
+	colorCmd      = term.AttrBold      + term.AttrBrightYellow
+	colorInteger  = term.AttrBrightCyan
+	colorPath     = term.AttrUnderline + term.AttrBrightGreen
+	colorEscape   = term.AttrBrightMagenta
+	colorString   = term.AttrBrightGreen
 )
+
+func isKeyword(tok token.Token) bool {
+	switch tok.Type {
+	case token.Exit, token.Echo, token.Cd: return true
+
+	default: return false
+	}
+}
+
+func isOperator(tok token.Token) bool {
+	switch tok.Type {
+	case token.And, token.Or: return true
+
+	default: return false
+	}
+}
 
 func PrintError(err error) {
 	fmt.Fprintf(os.Stderr, "%v%vError:%v %v\n", term.AttrBold, term.AttrBrightRed, term.AttrReset,
@@ -49,8 +66,13 @@ func isCmd(toks []token.Token, i int) (isCmd bool) {
 	// Would the token be parsed as a command?
 	isCmd = true
 	if i > 0 {
-		if toks[i - 1].Type != token.Separator {
-			isCmd = false
+		switch toks[i - 1].Type {
+		case token.Separator:
+
+		default:
+			if !isOperator(toks[i - 1]) {
+				isCmd = false
+			}
 		}
 	}
 
@@ -140,8 +162,10 @@ func highlightNext(toks []token.Token, i int, line string) (highlighted string, 
 		case token.Error:   highlighted += colorError   + txt
 
 		default:
-			if tok.Type.IsKeyword() {
+			if isKeyword(tok) {
 				highlighted += colorKeyword + txt
+			} else if isOperator(tok) {
+				highlighted += colorOperator + txt
 			} else if isCmd { // Is the current token a command?
 				if cmdExists(tok.Data) {
 					highlighted += colorCmd + txt

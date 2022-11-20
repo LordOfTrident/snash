@@ -1,4 +1,4 @@
-package interpreter
+package evaluator
 
 import (
 	"fmt"
@@ -12,10 +12,7 @@ import (
 	"github.com/LordOfTrident/snash/internal/env"
 )
 
-func Interpret(env *env.Env, source, path string) error {
-	lastEx := env.Ex
-	env.Ex  = 0
-
+func Eval(env *env.Env, source, path string) error {
 	p, err := parser.New(source, path)
 	if err != nil {
 		env.Ex = 1
@@ -30,26 +27,44 @@ func Interpret(env *env.Env, source, path string) error {
 		return err
 	}
 
-	// Interpret each statement
-	for _, s := range program.List {
-		var err error
+	return evalStatements(env, program)
+}
 
-		switch s := s.(type) {
-		case *node.CmdStatement: err = evalCmd(env, s)
-		case *node.ExitStatement:
-			evalExit(env, s, lastEx)
-
-			return nil
-
-		case *node.EchoStatement: evalEcho(env, s)
-		case *node.CdStatement:   err = evalCd(env, s)
-
-		default: err = errors.UnexpectedNode(s)
-		}
-
-		if err != nil {
+func evalStatements(env *env.Env, statements node.Statements) error {
+	for _, s := range statements.List {
+		if err := evalStatement(env, s); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func evalStatement(env *env.Env, s node.Statement) error {
+	switch s := s.(type) {
+	case *node.CmdStatement:  return evalCmd(env, s)
+	case *node.CdStatement:   return evalCd(env, s)
+	case *node.ExitStatement: evalExit(env, s)
+	case *node.EchoStatement: evalEcho(env, s)
+
+	case *node.LogicalOpStatement: return evalLogicalOp(env, s)
+
+	default: return errors.UnexpectedNode(s)
+	}
+
+	return nil
+}
+
+func evalLogicalOp(env *env.Env, lo *node.LogicalOpStatement) error {
+	err := evalStatement(env, lo.Left)
+	if err != nil {
+		return err
+	}
+
+	if (lo.Type == node.LogicalAnd && env.Ex == 0) || (lo.Type == node.LogicalOr && env.Ex != 0) {
+		err := evalStatement(env, lo.Right)
+
+		return err
 	}
 
 	return nil
@@ -104,8 +119,8 @@ func evalCmd(env *env.Env, cs *node.CmdStatement) error {
 	err := process.Wait()
 	if exErr, ok := err.(*exec.ExitError); ok {
 		env.Ex = exErr.ExitCode()
-
-		return nil
+	} else {
+		env.Ex = 0
 	}
 
 	return nil
@@ -117,7 +132,7 @@ func evalArg(str string) (string, error) {
 	return str, nil
 }
 
-func evalExit(env *env.Env, ex *node.ExitStatement, lastEx int) {
+func evalExit(env *env.Env, ex *node.ExitStatement) {
 	// Let the environment know that a forced exit happend
 	env.Flags.ForcedExit = true
 
@@ -125,13 +140,13 @@ func evalExit(env *env.Env, ex *node.ExitStatement, lastEx int) {
 	// the requested one
 	if ex.HasEx {
 		env.Ex = ex.Ex
-	} else {
-		env.Ex = lastEx
 	}
 }
 
 func evalEcho(env *env.Env, echo *node.EchoStatement) {
 	fmt.Println(echo.Msg)
+
+	env.Ex = 0
 }
 
 func evalCd(env *env.Env, cd *node.CdStatement) error {
@@ -141,6 +156,8 @@ func evalCd(env *env.Env, cd *node.CdStatement) error {
 		env.Ex = 1
 
 		return errors.FileNotFound(cd.Path, cd.NodeToken().Where)
+	} else {
+		env.Ex = 0
 	}
 
 	return nil
