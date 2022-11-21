@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+// TODO: Make this a reusable library
+
 const (
 	AttrReset     = "\x1b[0m"
 	AttrBold      = "\x1b[1m"

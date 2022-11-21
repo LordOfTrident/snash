@@ -11,6 +11,8 @@ import (
 	"github.com/LordOfTrident/snash/internal/highlighter"
 )
 
+// TODO: Make this a reusable library
+
 // TODO: Multi-line prompt mode, which is gonna be like a text editor field inside the
 //       command line. Pressing ESC will execute that code, and pressing CTRL+S will save it into
 //       a chosen file.
