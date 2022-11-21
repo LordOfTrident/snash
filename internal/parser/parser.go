@@ -20,12 +20,16 @@ func isStatementEnd(tok *token.Token) bool {
 	return tok.Type == token.Separator || tok.Type == token.EOF
 }
 
-func isLogicalOp(tok *token.Token) bool {
+func isBinOp(tok *token.Token) bool {
 	return tok.Type == token.And || tok.Type == token.Or
 }
 
-func isFactorEnd(tok *token.Token) bool {
-	return isLogicalOp(tok) || isStatementEnd(tok)
+func isArgsEnd(tok *token.Token) bool {
+	switch tok.Type {
+	case token.LParen, token.RParen: return true
+
+	default: return isBinOp(tok) || isStatementEnd(tok)
+	}
 }
 
 func New(source, path string) (*Parser, error) {
@@ -76,12 +80,16 @@ func (p *Parser) NextStatement() (node.Statement, error) {
 
 			continue
 
-		default: return p.parseLogicalOp()
+		default: return p.parseStatement()
 		}
 	}
 }
 
-func (p *Parser) parseLogicalOp() (node.Statement, error) {
+func (p *Parser) parseStatement() (node.Statement, error) {
+	return p.parseLogicalBinOp()
+}
+
+func (p *Parser) parseLogicalBinOp() (node.Statement, error) {
 	left, err := p.parseFactor()
 	if err != nil {
 		return nil, err
@@ -93,7 +101,7 @@ func (p *Parser) parseLogicalOp() (node.Statement, error) {
 	}
 
 	// Else parse the logical operators
-	for isLogicalOp(p.tok) {
+	for p.tok.Type == token.And || p.tok.Type == token.Or {
 		tok := *p.tok // Save the operator token for the operator node
 		p.next()
 
@@ -102,13 +110,7 @@ func (p *Parser) parseLogicalOp() (node.Statement, error) {
 			return nil, err
 		}
 
-		var type_ int
-		switch tok.Type {
-		case token.And: type_ = node.LogicalAnd
-		case token.Or:  type_ = node.LogicalOr
-		}
-
-		left = &node.LogicalOpStatement{Type: type_, Left: left, Right: right}
+		left = &node.BinOpStatement{Token: tok, Left: left, Right: right}
 
 		if isStatementEnd(p.tok) {
 			break
@@ -125,6 +127,20 @@ func (p *Parser) parseFactor() (node.Statement, error) {
 	case token.Echo:   return p.parseEcho()
 	case token.Cd:     return p.parseCd()
 
+	case token.LParen:
+		p.next()
+
+		s, err := p.parseStatement()
+		if err != nil {
+			return nil, err
+		} else if p.tok.Type != token.RParen {
+			return nil, errors.ExpectedToken(p.tok, token.RParen)
+		}
+
+		p.next()
+
+		return s, nil
+
 	default: return nil, errors.UnexpectedToken(p.tok)
 	}
 }
@@ -133,7 +149,7 @@ func (p *Parser) parseCmd() (*node.CmdStatement, error) {
 	cs := &node.CmdStatement{Token: *p.tok, Cmd: p.tok.Data}
 
 	// Get the command arguments
-	for p.next(); !isFactorEnd(p.tok); p.next() {
+	for p.next(); !isArgsEnd(p.tok); p.next() {
 		var arg string
 
 		switch p.tok.Type {
@@ -155,7 +171,7 @@ func (p *Parser) parseExit() (*node.ExitStatement, error) {
 	// Exitcodes have to be integers
 
 	// If there is just an exit token alone, we will use the latest exitcode to exit
-	if p.next(); isFactorEnd(p.tok) {
+	if p.next(); isArgsEnd(p.tok) {
 		es.HasEx = false // The statement has no requested exitcode
 	} else if p.tok.Type == token.Integer {
 		// If there is a requested exitcode, save it
@@ -174,7 +190,7 @@ func (p *Parser) parseExit() (*node.ExitStatement, error) {
 	}
 
 	// Make sure the statement is ended
-	if !isFactorEnd(p.tok) {
+	if !isArgsEnd(p.tok) {
 		return nil, errors.ExpectedToken(p.tok, token.Separator)
 	}
 
@@ -187,7 +203,7 @@ func (p *Parser) parseEcho() (*node.EchoStatement, error) {
 	echo := &node.EchoStatement{Token: *p.tok}
 
 	// Append all the arguments to a string
-	for p.next(); !isFactorEnd(p.tok); p.next() {
+	for p.next(); !isArgsEnd(p.tok); p.next() {
 		switch p.tok.Type {
 		case token.String, token.Integer: echo.Msg += p.tok.Data + " "
 
@@ -202,7 +218,7 @@ func (p *Parser) parseCd() (*node.CdStatement, error) {
 	cd := &node.CdStatement{Token: *p.tok}
 
 	// If no path is specified, we change the directory to the home directory
-	if p.next(); isFactorEnd(p.tok) {
+	if p.next(); isArgsEnd(p.tok) {
 		cd.Path = "~/"
 	} else if p.tok.Type == token.String {
 		cd.Path = p.tok.Data

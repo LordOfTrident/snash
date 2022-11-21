@@ -72,28 +72,22 @@ func (cd *CdStatement) NodeTypeToString() string {
 	return "cd statement"
 }
 
-// And
+// Binary operator
 
-const (
-	LogicalAnd = iota
-	LogicalOr
-)
-
-type LogicalOpStatement struct {
+type BinOpStatement struct {
 	Token token.Token
 
-	Type        int
 	Left, Right Statement
 }
 
-func (lo *LogicalOpStatement) statementNode() {}
+func (bin *BinOpStatement) statementNode() {}
 
-func (lo *LogicalOpStatement) NodeToken() token.Token {
-	return lo.Token
+func (bin *BinOpStatement) NodeToken() token.Token {
+	return bin.Token
 }
 
-func (lo *LogicalOpStatement) NodeTypeToString() string {
-	return "logical operator statement"
+func (bin *BinOpStatement) NodeTypeToString() string {
+	return "binary operator " + bin.NodeToken().Type.String()
 }
 
 // Command

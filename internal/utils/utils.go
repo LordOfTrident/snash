@@ -16,7 +16,7 @@ func IsWhitespace(char byte) bool {
 
 func IsSeparator(char byte) bool {
 	switch char {
-	case ' ', '\r', '\t', '\n', '\v', '\f', ';': return true
+	case ' ', '\r', '\t', '\n', '\v', '\f', ';', '(', ')': return true
 
 	default: return false
 	}

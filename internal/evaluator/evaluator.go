@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/LordOfTrident/snash/internal/errors"
+	"github.com/LordOfTrident/snash/internal/token"
 	"github.com/LordOfTrident/snash/internal/node"
 	"github.com/LordOfTrident/snash/internal/parser"
 	"github.com/LordOfTrident/snash/internal/env"
@@ -47,7 +48,7 @@ func evalStatement(env *env.Env, s node.Statement) error {
 	case *node.ExitStatement: evalExit(env, s)
 	case *node.EchoStatement: evalEcho(env, s)
 
-	case *node.LogicalOpStatement: return evalLogicalOp(env, s)
+	case *node.BinOpStatement: return evalBinOp(env, s)
 
 	default: return errors.UnexpectedNode(s)
 	}
@@ -55,16 +56,36 @@ func evalStatement(env *env.Env, s node.Statement) error {
 	return nil
 }
 
-func evalLogicalOp(env *env.Env, lo *node.LogicalOpStatement) error {
-	err := evalStatement(env, lo.Left)
+func evalBinOp(env *env.Env, bin *node.BinOpStatement) error {
+	switch bin.NodeToken().Type {
+	case token.Or:  return evalOrBinOp(env, bin)
+	case token.And: return evalAndBinOp(env, bin)
+
+	default: return errors.UnexpectedNode(bin)
+	}
+}
+
+func evalOrBinOp(env *env.Env, bin *node.BinOpStatement) error {
+	err := evalStatement(env, bin.Left)
 	if err != nil {
 		return err
 	}
 
-	if (lo.Type == node.LogicalAnd && env.Ex == 0) || (lo.Type == node.LogicalOr && env.Ex != 0) {
-		err := evalStatement(env, lo.Right)
+	if env.Ex != 0 {
+		return evalStatement(env, bin.Right)
+	}
 
+	return nil
+}
+
+func evalAndBinOp(env *env.Env, bin *node.BinOpStatement) error {
+	err := evalStatement(env, bin.Left)
+	if err != nil {
 		return err
+	}
+
+	if env.Ex == 0 {
+		return evalStatement(env, bin.Right)
 	}
 
 	return nil

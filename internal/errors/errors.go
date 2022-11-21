@@ -20,6 +20,9 @@ func tokenToString(tok token.Token) string {
 	case token.Separator: return "separator (';' or new line)"
 	case token.EOF:       return "end of file"
 
+	case token.LParen, token.RParen,
+	     token.And,    token.Or: return utils.Quote(tok.Type.String())
+
 	default: return fmt.Sprintf("%v of type %v",
 	                            utils.Quote(tok.Data), utils.Quote(tok.Type.String()))
 	}

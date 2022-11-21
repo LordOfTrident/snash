@@ -76,6 +76,10 @@ func isCmd(toks []token.Token, i int) (isCmd bool) {
 		}
 	}
 
+	if toks[i].Type != token.String {
+		return false
+	}
+
 	return
 }
 

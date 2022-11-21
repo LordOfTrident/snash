@@ -26,6 +26,7 @@ import (
 // 1.6.4: Syntax highlighting flag, make ixon not be disabled when the mode is not interactive
 // 1.6.5: Remove ignore marker characters from the prompt when it is rendered
 // 1.7.5: Add logical and, or operators
+// 1.7.6: Fix logical or (it was lexed as a logical and)
 
 var showVersion = flag.Bool("version", false, "Show the version")
 

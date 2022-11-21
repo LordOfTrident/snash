@@ -49,6 +49,14 @@ func (l *Lexer) NextToken() (tok token.Token) {
 			tok = token.New(token.Separator, "", l.where, 1)
 			l.next()
 
+		case '(':
+			tok = token.New(token.LParen, string(l.char), l.where, 1)
+			l.next()
+
+		case ')':
+			tok = token.New(token.RParen, string(l.char), l.where, 1)
+			l.next()
+
 		// Ignore whitespaces
 		case ' ', '\r', '\t', '\v', '\f':
 			l.next()
@@ -107,7 +115,7 @@ func (l *Lexer) lexOr() token.Token {
 
 	l.next()
 
-	return token.New(token.And, "||", start, 2)
+	return token.New(token.Or, "||", start, 2)
 }
 
 func (l *Lexer) lexString() token.Token {

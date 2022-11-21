@@ -21,6 +21,9 @@ const (
 	String
 	Separator
 
+	LParen
+	RParen
+
 	Exit
 	Echo
 	Cd
@@ -33,7 +36,7 @@ const (
 )
 
 func (type_ Type) String() string {
-	if count != 10 {
+	if count != 12 {
 		panic("Cover all token types")
 	}
 
@@ -44,12 +47,15 @@ func (type_ Type) String() string {
 	case String:    return "string"
 	case Separator: return "separator"
 
+	case LParen: return "("
+	case RParen: return ")"
+
 	case Exit: return "keyword exit"
 	case Echo: return "keyword echo"
 	case Cd:   return "keyword cd"
 
-	case And: return "logical and"
-	case Or:  return "logical or"
+	case And: return "&&"
+	case Or:  return "||"
 
 	case Error: return "error"
 
