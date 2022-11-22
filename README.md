@@ -39,7 +39,9 @@ $ ./bin/app
 - [X] Executing simple commands
 - [X] An interactive REPL
 - [ ] Environment variables (reading + writing)
+- [ ] A config file
 - [ ] Aliases
+- [ ] Command keybinds
 - [ ] If statements
 - [ ] Functions
 - [ ] Piping and redirecting output
