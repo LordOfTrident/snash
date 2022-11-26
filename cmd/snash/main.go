@@ -12,22 +12,23 @@ import (
 	"github.com/LordOfTrident/snash/internal/highlighter"
 )
 
-// 1.0.0: First release, executing simple commands
-// 1.1.0: Added an interactive REPL
-// 1.2.0: Add command line flags
-// 1.2.1: Ignore CTRL+C
-// 1.3.1: Add an option to print possible input errors under the prompt
-// 1.3.2: Improve syntax highlighting
-// 1.3.3: Fix string escape sequences
-// 1.3.4: Unescape error strings
-// 1.4.4: CTRL + arrow keys cursor movement
-// 1.5.4: Config folder + REPL history file
-// 1.6.4: Syntax highlighting flag, make ixon not be disabled when the mode is not interactive
-// 1.6.5: Remove ignore marker characters from the prompt when it is rendered
-// 1.7.5: Add logical and, or operators
-// 1.7.6: Fix logical or (it was lexed as a logical and)
-// 1.8.6: Help keyword, loading history from a file, variable string highlighting
-// 1.9.6: Prompt line wrapping
+// 1.0.0:  First release, executing simple commands
+// 1.1.0:  Added an interactive REPL
+// 1.2.0:  Add command line flags
+// 1.2.1:  Ignore CTRL+C
+// 1.3.1:  Add an option to print possible input errors under the prompt
+// 1.3.2:  Improve syntax highlighting
+// 1.3.3:  Fix string escape sequences
+// 1.3.4:  Unescape error strings
+// 1.4.4:  CTRL + arrow keys cursor movement
+// 1.5.4:  Config folder + REPL history file
+// 1.6.4:  Syntax highlighting flag, make ixon not be disabled when the mode is not interactive
+// 1.6.5:  Remove ignore marker characters from the prompt when it is rendered
+// 1.7.5:  Add logical and, or operators
+// 1.7.6:  Fix logical or (it was lexed as a logical and)
+// 1.8.6:  Help keyword, loading history from a file, variable string highlighting
+// 1.9.6:  Prompt line wrapping
+// 1.10.6: Add global variable writing, exporting
 
 var showVersion = flag.Bool("version", false, "Show the version")
 

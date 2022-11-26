@@ -101,9 +101,6 @@ func evalExport(env *env.Env, export *node.ExportStatement) error {
 		return errors.VarNotFound(export.Name, export.NodeToken().Where)
 	}
 
-	// When we add local scopes, simply just move all exported local variables
-	// at the end of the scope to the previous scope
-
 	env.Scopes[0].Export(export.Name, true)
 
 	return nil
@@ -124,6 +121,7 @@ func evalOrBinOp(env *env.Env, bin *node.BinOpStatement) (int, error) {
 		return 1, err
 	}
 
+	// Only run the second command if the first one failed
 	if env.Ex != 0 {
 		ex, err := evalStatement(env, bin.Right)
 		if err != nil {
@@ -142,6 +140,7 @@ func evalAndBinOp(env *env.Env, bin *node.BinOpStatement) (int, error) {
 		return 1, err
 	}
 
+	// Only run the second command if the first one didnt error
 	if env.Ex == 0 {
 		ex, err := evalStatement(env, bin.Right)
 		if err != nil {

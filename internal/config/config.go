@@ -10,7 +10,7 @@ const (
 	AppName = "snash"
 
 	VersionMajor = 1
-	VersionMinor = 9
+	VersionMinor = 10
 	VersionPatch = 6
 
 	GithubLink = "https://github.com/LordOfTrident/snash"
