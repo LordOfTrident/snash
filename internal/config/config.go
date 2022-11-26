@@ -4,21 +4,24 @@ import (
 	"os"
 	"flag"
 	"fmt"
+
+	"github.com/LordOfTrident/snash/runtime"
 )
 
 const (
 	AppName = "snash"
 
 	VersionMajor = 1
-	VersionMinor = 10
-	VersionPatch = 6
+	VersionMinor = 11
+	VersionPatch = 7
 
 	GithubLink = "https://github.com/LordOfTrident/snash"
 )
 
 var (
-	Folder      = os.Getenv("HOME") + "/.config/snash"
-	HistoryFile = Folder + "/history"
+	Folder      = os.Getenv("HOME") + "/.config/snash/"
+	HistoryPath = Folder + "history"
+	RCPath      = Folder + runtime.RCFile
 )
 
 var (
@@ -26,12 +29,6 @@ var (
 	ShowPossibleErrors = flag.Bool("showPossibleErrors", true, "Print the possible input errors")
 	SyntaxHighlighting = flag.Bool("syntaxHighlighting", true, "Syntax highlight the input")
 )
-
-func FolderExists() bool {
-	_, err := os.Stat(Folder);
-
-	return err == nil
-}
 
 func CreateFolder() error {
 	if err := os.Mkdir(Folder, os.ModePerm); err != nil {

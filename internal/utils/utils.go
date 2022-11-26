@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"os"
 	"strings"
 )
 
@@ -16,6 +17,12 @@ func Unescape(str string) string {
 	str = strings.Replace(str, "\"",       "\\\"", -1)
 
 	return str
+}
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+
+	return err == nil
 }
 
 func Quote(str string) string {

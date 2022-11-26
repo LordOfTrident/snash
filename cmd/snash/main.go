@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"flag"
 
+	"github.com/LordOfTrident/snash/runtime"
+
+	"github.com/LordOfTrident/snash/internal/utils"
 	"github.com/LordOfTrident/snash/internal/config"
 	"github.com/LordOfTrident/snash/internal/repl"
 	"github.com/LordOfTrident/snash/internal/env"
@@ -29,6 +32,8 @@ import (
 // 1.8.6:  Help keyword, loading history from a file, variable string highlighting
 // 1.9.6:  Prompt line wrapping
 // 1.10.6: Add global variable writing, exporting
+// 1.10.7: Fix string escape sequence highlighting
+// 1.11.7: Add an RC file, update help message
 
 var showVersion = flag.Bool("version", false, "Show the version")
 
@@ -37,7 +42,7 @@ var e = env.New()
 func execScript(path string) int {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		highlighter.PrintError(fmt.Errorf("Could not read file '%v'", path))
+		highlighter.PrintError("Could not read file %v", utils.Quote(path))
 
 		os.Exit(1)
 	}
@@ -46,7 +51,7 @@ func execScript(path string) int {
 
 	err = evaluator.Eval(e, string(data), path)
 	if err != nil {
-		highlighter.PrintError(err)
+		highlighter.PrintError(err.Error())
 
 		os.Exit(1)
 	}
@@ -82,9 +87,17 @@ func main() {
 		return
 	}
 
-	if !config.FolderExists() {
+	if !utils.FileExists(config.Folder) {
 		config.CreateFolder()
 	}
+
+	if !utils.FileExists(config.RCPath) {
+		if err := runtime.WriteFile(config.RCPath, runtime.RC); err != nil {
+			highlighter.PrintError("Could not write file %v", utils.Quote(config.RCPath))
+		}
+	}
+
+	execScript(config.RCPath)
 
 	if len(flag.Args()) > 0 {
 		ex := 0

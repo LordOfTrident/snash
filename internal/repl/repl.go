@@ -1,8 +1,6 @@
 package repl
 
 import (
-	"fmt"
-
 	"github.com/LordOfTrident/snash/pkg/term"
 	"github.com/LordOfTrident/snash/pkg/prompt"
 
@@ -17,7 +15,7 @@ func REPL(env *env.Env) int {
 	term.OnCtrlC(func() {})
 	term.SendResizeEvents()
 
-	history, _ := prompt.LoadHistory(config.HistoryFile)
+	history, _ := prompt.LoadHistory(config.HistoryPath)
 
 	h := highlighter.New(env)
 	p := prompt.New(history, h)
@@ -41,7 +39,7 @@ func REPL(env *env.Env) int {
 
 		err := evaluator.Eval(env, in, "stdin")
 		if err != nil {
-			highlighter.PrintError(err)
+			highlighter.PrintError(err.Error())
 		}
 
 		// Exit the repl if last exit was forced
@@ -50,9 +48,8 @@ func REPL(env *env.Env) int {
 		}
 	}
 
-	if err := p.History.SaveToFile(config.HistoryFile); err != nil {
-		highlighter.PrintError(fmt.Errorf("Could not save history file %v",
-		                                  utils.Quote(config.HistoryFile)))
+	if err := p.History.SaveToFile(config.HistoryPath); err != nil {
+		highlighter.PrintError("Could not save history file %v", utils.Quote(config.HistoryPath))
 	}
 
 	return env.Ex

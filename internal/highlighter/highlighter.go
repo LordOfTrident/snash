@@ -9,6 +9,7 @@ import (
 
 	"github.com/LordOfTrident/snash/pkg/term"
 
+	"github.com/LordOfTrident/snash/internal/utils"
 	"github.com/LordOfTrident/snash/internal/errors"
 	"github.com/LordOfTrident/snash/internal/token"
 	"github.com/LordOfTrident/snash/internal/lexer"
@@ -101,15 +102,9 @@ func isCmd(toks []token.Token, i int) (isCmd bool) {
 	return
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-
-	return err == nil
-}
-
-func PrintError(err error) {
+func PrintError(format string, args... interface{}) {
 	fmt.Fprintf(os.Stderr, "%v%vError:%v %v\n", term.AttrBold, term.AttrBrightRed, term.AttrReset,
-	            HighlightStrings(err.Error()))
+	            HighlightStrings(fmt.Sprintf(format, args...)))
 }
 
 func Printf(format string, args... interface{}) {
@@ -186,6 +181,8 @@ func HighlightStrings(str string) (ret string) {
 				if escape {
 					ret += string(ch) + term.AttrReset + colorString
 
+					escape = false
+
 					continue
 				}
 			}
@@ -235,7 +232,8 @@ func highlightNext(toks []token.Token, i int, code string) (highlighted string, 
 
 					highlighted += colorError + txt
 				}
-			} else if !isCmd && fileExists(tok.Data) { // Is the current token a file path argument?
+			} else if !isCmd && utils.FileExists(tok.Data) { // Is the current token a
+			                                                 // file path argument?
 				highlighted += colorPath + txt
 			} else {
 				highlighted += HighlightStrings(txt)

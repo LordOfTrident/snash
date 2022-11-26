@@ -4,6 +4,7 @@ import (
 	"unicode"
 
 	"github.com/LordOfTrident/snash/internal/errors"
+	"github.com/LordOfTrident/snash/internal/utils"
 	"github.com/LordOfTrident/snash/internal/token"
 )
 
@@ -45,6 +46,16 @@ func (l *Lexer) NextToken() (tok token.Token) {
 		switch l.char {
 		// EOF token marks the source end
 		case '\x00': tok = token.NewEOF(l.where)
+
+		case '\\':
+			if l.peekChar() == '\n' {
+				l.next()
+				l.next()
+
+				continue
+			} else {
+				tok = l.lexWord()
+			}
 
 		case '\n', ';':
 			tok = token.New(token.Separator, "", l.where, 1)
@@ -93,7 +104,8 @@ func (l *Lexer) lexAnd() token.Token {
 
 	if l.next(); l.char != '&' {
 		return token.NewError(start, 1,
-		                      "Unexpected character \"&\", did you mean \"&&\"?")
+		                      "Unexpected character %v, did you mean %v?",
+		                      utils.Quote("&"), utils.Quote("&&"))
 	}
 
 	l.next()
@@ -107,7 +119,8 @@ func (l *Lexer) lexOr() token.Token {
 	// TODO: Add piping
 	if l.next(); l.char != '|' {
 		return token.NewError(start, 1,
-		                      "Unexpected character \"|\", did you mean \"||\"?")
+		                      "Unexpected character %v, did you mean %v?",
+		                      utils.Quote("|"), utils.Quote("||"))
 	}
 
 	l.next()

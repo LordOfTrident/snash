@@ -1,0 +1,12 @@
+# snash config file
+
+# Default prompt
+PROMPT = "\\[\e[1m\e[32m\\]\\w \\[\e[0m\\]$ "
+
+# Prompt used after a failed command
+PROMPT_ERROR = "\\[\e[1m\e[32m\\]\\w \\[\e[0m\\][\\[\e[1m\e[91m\\]\\ex\\[\e[0m\\]] $ "
+
+# A greeting
+echo \
+`\e[0mWelcome to snash!
+Type in \e[92m'help'\e[0m to show the help message\n`

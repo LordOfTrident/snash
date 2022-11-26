@@ -223,13 +223,11 @@ func keywordHighlight(keyword string) string {
 }
 
 func evalHelp(env *env.Env, echo *node.HelpStatement) {
-	fmt.Println(term.AttrUnderline + config.GithubLink + term.AttrReset)
-
-	fmt.Println("\n  " + term.AttrGreen + term.AttrItalics +
-	            "A shell for Unix and Linux systems" + term.AttrReset +"\n")
-
-	fmt.Printf("%v help\nversion " + term.AttrCyan + "%v.%v.%v" + term.AttrReset + "\n",
+	fmt.Printf("%v help\nversion %v.%v.%v\n",
 	           config.AppName, config.VersionMajor, config.VersionMinor, config.VersionPatch)
+
+	fmt.Println("\nSee " + term.AttrUnderline + term.AttrBrightGreen +
+	            config.GithubLink + term.AttrReset)
 
 	fmt.Println("\nBuilt-in commands:")
 	fmt.Printf("  %v           Show this message\n",                 keywordHighlight("help"))

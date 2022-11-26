@@ -10,6 +10,8 @@ import (
 	"github.com/LordOfTrident/snash/internal/utils"
 )
 
+// TODO: Add variables to detect the mode of the shell (interactive etc...)
+
 type Env struct {
 	Ex int
 
