@@ -4,17 +4,16 @@ import (
 	"os"
 	"flag"
 	"fmt"
-
-	"github.com/LordOfTrident/snash/internal/utils"
-	"github.com/LordOfTrident/snash/internal/highlighter"
 )
 
 const (
 	AppName = "snash"
 
 	VersionMajor = 1
-	VersionMinor = 7
+	VersionMinor = 9
 	VersionPatch = 6
+
+	GithubLink = "https://github.com/LordOfTrident/snash"
 )
 
 var (
@@ -28,22 +27,16 @@ var (
 	SyntaxHighlighting = flag.Bool("syntaxHighlighting", true, "Syntax highlight the input")
 )
 
-func HasFolder() bool {
+func FolderExists() bool {
 	_, err := os.Stat(Folder);
 
 	return err == nil
 }
 
-func FixFolder() bool {
-	if !HasFolder() {
-		highlighter.Printf("Config directory %v missing, creating it\n", utils.Quote(Folder))
-
-		if err := os.Mkdir(Folder, os.ModePerm); err != nil {
-			highlighter.PrintError(fmt.Errorf("Could not create config folder '%v/'", Folder))
-
-			return false
-		}
+func CreateFolder() error {
+	if err := os.Mkdir(Folder, os.ModePerm); err != nil {
+		return fmt.Errorf("Could not create config folder")
 	}
 
-	return true
+	return nil
 }

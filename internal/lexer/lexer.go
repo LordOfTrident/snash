@@ -1,7 +1,8 @@
 package lexer
 
 import (
-	"github.com/LordOfTrident/snash/internal/utils"
+	"unicode"
+
 	"github.com/LordOfTrident/snash/internal/errors"
 	"github.com/LordOfTrident/snash/internal/token"
 )
@@ -10,7 +11,7 @@ type Lexer struct {
 	where token.Where
 
 	idx  int
-	char byte
+	char rune
 
 	source string
 }
@@ -43,18 +44,14 @@ func (l *Lexer) NextToken() (tok token.Token) {
 	for {
 		switch l.char {
 		// EOF token marks the source end
-		case utils.CharNone: tok = token.NewEOF(l.where)
+		case '\x00': tok = token.NewEOF(l.where)
 
 		case '\n', ';':
 			tok = token.New(token.Separator, "", l.where, 1)
 			l.next()
 
-		case '(':
-			tok = token.New(token.LParen, string(l.char), l.where, 1)
-			l.next()
-
-		case ')':
-			tok = token.New(token.RParen, string(l.char), l.where, 1)
+		case '=':
+			tok = token.New(token.Equals, string(l.char), l.where, 1)
 			l.next()
 
 		// Ignore whitespaces
@@ -72,10 +69,10 @@ func (l *Lexer) NextToken() (tok token.Token) {
 		case '|': tok = l.lexOr()
 
 		default:
-			if utils.IsDigit(l.char) {
+			if unicode.IsDigit(l.char) {
 				tok = l.lexInteger()
 			} else {
-				tok = l.lexString()
+				tok = l.lexWord()
 			}
 		}
 
@@ -86,7 +83,7 @@ func (l *Lexer) NextToken() (tok token.Token) {
 }
 
 func (l *Lexer) skipComment() {
-	for l.char != utils.CharNone && l.char != '\n' {
+	for l.char != '\x00' && l.char != '\n' {
 		l.next()
 	}
 }
@@ -118,20 +115,20 @@ func (l *Lexer) lexOr() token.Token {
 	return token.New(token.Or, "||", start, 2)
 }
 
-func (l *Lexer) lexString() token.Token {
+func (l *Lexer) lexWord() token.Token {
 	start := l.where // The starting position of the token
 	str   := ""      // The token data string
 
-	apostrophe := utils.CharNone // To save the current apostrophe we are using
-	escape     := false           // Are we inside an escape sequence?
+	apostrophe := '\x00' // To save the current apostrophe we are using
+	escape     := false  // Are we inside an escape sequence?
 
-	isWord := true // A flag to see if the string could be a keyword
+	isBareWord := true // Could be a keyword
 
 loop:
-	for ; apostrophe != utils.CharNone || !utils.IsSeparator(l.char); l.next() {
+	for ; apostrophe != '\x00' || !unicode.IsSpace(l.char) && l.char != ';'; l.next() {
 		switch l.char {
-		case utils.CharNone:
-			if apostrophe == utils.CharNone {
+		case '\x00':
+			if apostrophe == '\x00' {
 				break loop
 			} else {
 				return token.NewError(start, l.where.Col - start.Col, "String not terminated")
@@ -148,8 +145,8 @@ loop:
 				// Find out if it is an end marking apostrophe, a beginning one or just a part
 				// of the string
 				if apostrophe == l.char {
-					apostrophe = utils.CharNone
-				} else if apostrophe == utils.CharNone {
+					apostrophe = '\x00'
+				} else if apostrophe == '\x00' {
 					apostrophe = l.char
 				} else {
 					str += string(l.char)
@@ -176,6 +173,15 @@ loop:
 				return token.NewError(start, l.where.Col - start.Col, "String exceeds line")
 			}
 
+		case '$':
+			if escape || apostrophe == '\'' {
+				str += "\\$"
+
+				escape = false
+			} else {
+				str += "$"
+			}
+
 		default:
 			if escape {
 				// Parse the escape sequence
@@ -199,26 +205,30 @@ loop:
 			}
 		}
 
-		if isWord {
-			isWord = utils.IsAlpha(l.char)
+		if isBareWord {
+			isBareWord = unicode.IsLetter(l.char)
 		}
 	}
 
 	// Check if the string is a keyword
-	if isWord {
-		return token.New(getWordTokenType(str), str, start, l.where.Col - start.Col)
+	if isBareWord {
+		return token.New(getBareWordTokenType(str), str, start, l.where.Col - start.Col)
 	} else {
-		return token.New(token.String, str, start, l.where.Col - start.Col)
+		return token.New(token.Word, str, start, l.where.Col - start.Col)
 	}
 }
 
-func getWordTokenType(word string) token.Type {
+func getBareWordTokenType(word string) token.Type {
 	switch word {
+	case "help": return token.Help
 	case "exit": return token.Exit
 	case "echo": return token.Echo
 	case "cd":   return token.Cd
 
-	default: return token.String
+	case "let":    return token.Let
+	case "export": return token.Export
+
+	default: return token.BareWord
 	}
 }
 
@@ -227,9 +237,9 @@ func (l *Lexer) next() {
 
 	// Make sure we wont exceed the source code length
 	if l.idx >= len(l.source) {
-		l.char = utils.CharNone
+		l.char = '\x00'
 	} else {
-		l.char = l.source[l.idx]
+		l.char = rune(l.source[l.idx])
 	}
 
 	// Update position variables
@@ -241,11 +251,11 @@ func (l *Lexer) next() {
 	}
 }
 
-func (l *Lexer) peekChar() byte {
+func (l *Lexer) peekChar() rune {
 	if l.idx + 1 >= len(l.source) {
-		return utils.CharNone
+		return '\x00'
 	} else {
-		return l.source[l.idx + 1]
+		return rune(l.source[l.idx + 1])
 	}
 }
 
@@ -254,8 +264,8 @@ func (l *Lexer) lexInteger() token.Token {
 	str   := ""      // The token data string
 
 	// TODO: make tokens like '123abc' not error and instead be lexer as strings
-	for ; l.char != utils.CharNone && !utils.IsSeparator(l.char); l.next() {
-		if !utils.IsDigit(l.char) {
+	for ; l.char != '\x00' && !unicode.IsSpace(l.char) && l.char != ';'; l.next() {
+		if !unicode.IsDigit(l.char) {
 			return token.NewError(start, l.where.Col - start.Col,
 			                      "Unexpected character \"%c\" in number", l.char)
 		}

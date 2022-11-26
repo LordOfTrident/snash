@@ -72,6 +72,24 @@ func (cd *CdStatement) NodeTypeToString() string {
 	return "cd statement"
 }
 
+// Help
+
+type HelpStatement struct {
+	Token token.Token
+
+	Path string
+}
+
+func (hs *HelpStatement) statementNode() {}
+
+func (hs *HelpStatement) NodeToken() token.Token {
+	return hs.Token
+}
+
+func (hs *HelpStatement) NodeTypeToString() string {
+	return "help statement"
+}
+
 // Binary operator
 
 type BinOpStatement struct {
@@ -88,6 +106,56 @@ func (bin *BinOpStatement) NodeToken() token.Token {
 
 func (bin *BinOpStatement) NodeTypeToString() string {
 	return "binary operator " + bin.NodeToken().Type.String()
+}
+
+// Variables
+
+type LetStatement struct {
+	Token token.Token
+
+	Name, Value string
+}
+
+func (let *LetStatement) statementNode() {}
+
+func (let *LetStatement) NodeToken() token.Token {
+	return let.Token
+}
+
+func (let *LetStatement) NodeTypeToString() string {
+	return "let statement"
+}
+
+type AssignStatement struct {
+	Token token.Token
+
+	Name, Value string
+}
+
+func (as *AssignStatement) statementNode() {}
+
+func (as *AssignStatement) NodeToken() token.Token {
+	return as.Token
+}
+
+func (as *AssignStatement) NodeTypeToString() string {
+	return "assign statement"
+}
+
+type ExportStatement struct {
+	Token token.Token
+
+	Name string
+}
+
+func (export *ExportStatement) statementNode() {}
+
+func (export *ExportStatement) NodeToken() token.Token {
+	return export.Token
+}
+
+func (export *ExportStatement) NodeTypeToString() string {
+	return "export statement"
 }
 
 // Command

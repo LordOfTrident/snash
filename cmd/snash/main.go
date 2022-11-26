@@ -10,7 +10,6 @@ import (
 	"github.com/LordOfTrident/snash/internal/env"
 	"github.com/LordOfTrident/snash/internal/evaluator"
 	"github.com/LordOfTrident/snash/internal/highlighter"
-	"github.com/LordOfTrident/snash/internal/term"
 )
 
 // 1.0.0: First release, executing simple commands
@@ -27,6 +26,8 @@ import (
 // 1.6.5: Remove ignore marker characters from the prompt when it is rendered
 // 1.7.5: Add logical and, or operators
 // 1.7.6: Fix logical or (it was lexed as a logical and)
+// 1.8.6: Help keyword, loading history from a file, variable string highlighting
+// 1.9.6: Prompt line wrapping
 
 var showVersion = flag.Bool("version", false, "Show the version")
 
@@ -40,7 +41,7 @@ func execScript(path string) int {
 		os.Exit(1)
 	}
 
-	e.UpdateVars()
+	e.Update()
 
 	err = evaluator.Eval(e, string(data), path)
 	if err != nil {
@@ -65,16 +66,6 @@ func version() {
 }
 
 func init() {
-	// Defaults
-	os.Setenv("SHELL", os.Args[0])
-
-	os.Setenv("PROMPT",     "\\u@\\h \\w $ ")
-	os.Setenv("PROMPT_ERR", "\\u@\\h \\w [\\[" + term.AttrBold + term.AttrBrightRed + "\\]\\ex" +
-	                        "\\[" + term.AttrReset + "\\]] $ ")
-	os.Setenv("PROMPT_MULTILINE", "> ")
-
-	// Flag related things
-
 	flag.Usage = usage
 
 	// Aliases
@@ -90,7 +81,9 @@ func main() {
 		return
 	}
 
-	config.FixFolder()
+	if !config.FolderExists() {
+		config.CreateFolder()
+	}
 
 	if len(flag.Args()) > 0 {
 		ex := 0

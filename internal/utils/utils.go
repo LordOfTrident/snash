@@ -4,36 +4,6 @@ import (
 	"strings"
 )
 
-const CharNone byte = 0
-
-func IsWhitespace(char byte) bool {
-	switch char {
-	case ' ', '\r', '\t', '\v', '\f': return true
-
-	default: return false
-	}
-}
-
-func IsSeparator(char byte) bool {
-	switch char {
-	case ' ', '\r', '\t', '\n', '\v', '\f', ';', '(', ')': return true
-
-	default: return false
-	}
-}
-
-func IsAlpha(char byte) bool {
-	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
-}
-
-func IsDigit(char byte) bool {
-	return char >= '0' && char <= '9'
-}
-
-func IsAlphanum(char byte) bool {
-	return IsAlpha(char) || IsDigit(char)
-}
-
 func Unescape(str string) string {
 	str = strings.Replace(str, "\\",       "\\\\", -1)
 	str = strings.Replace(str, string(27), "\\e",  -1)
